@@ -27,7 +27,7 @@ class CompetitionRepository(private val client: HttpClient) {
             .body<CommonModel<List<OrienteeringCompetition>>>()
     }
 
-    suspend fun getById(id: Long): ApiResult<OrienteeringCompetition> = safeApiCall {
+    suspend fun getById(id: String): ApiResult<OrienteeringCompetition> = safeApiCall {
         client.get("$BASE_URL/event/orienteering/competitions/public/$id")
             .body<CommonModel<OrienteeringCompetition>>()
     }

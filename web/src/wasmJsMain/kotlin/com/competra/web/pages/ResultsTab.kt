@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ResultsTab(competitionId: Long) {
+fun ResultsTab(competitionId: String) {
     Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
         Text("Результаты соревнования #$competitionId (в разработке)")
     }

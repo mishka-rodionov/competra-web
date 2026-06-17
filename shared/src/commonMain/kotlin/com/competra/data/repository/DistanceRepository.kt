@@ -18,17 +18,17 @@ import io.ktor.http.HttpHeaders
 
 class DistanceRepository(private val client: HttpClient) {
 
-    suspend fun getByCompetition(competitionId: Long): ApiResult<List<Distance>> = safeApiCall {
+    suspend fun getByCompetition(competitionId: String): ApiResult<List<Distance>> = safeApiCall {
         client.get("$BASE_URL/event/orienteering/distances") {
             parameter("competitionId", competitionId)
         }.body<CommonModel<List<Distance>>>()
     }
 
-    suspend fun importFromXml(competitionId: Long, xmlBytes: ByteArray): ApiResult<List<Distance>> =
+    suspend fun importFromXml(competitionId: String, xmlBytes: ByteArray): ApiResult<List<Distance>> =
         safeApiCall {
             client.post("$BASE_URL/event/orienteering/import/courses") {
                 setBody(MultiPartFormDataContent(formData {
-                    append("competitionId", competitionId.toString())
+                    append("competitionId", competitionId)
                     append("xmlFile", xmlBytes, Headers.build {
                         append(HttpHeaders.ContentType, "application/xml")
                         append(HttpHeaders.ContentDisposition, "filename=\"courses.xml\"")

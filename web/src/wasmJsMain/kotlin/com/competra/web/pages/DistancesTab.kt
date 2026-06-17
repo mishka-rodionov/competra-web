@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
-fun DistancesTab(competitionId: Long) {
+fun DistancesTab(competitionId: String) {
     val repo: DistanceRepository = koinInject()
     val scope = rememberCoroutineScope()
 

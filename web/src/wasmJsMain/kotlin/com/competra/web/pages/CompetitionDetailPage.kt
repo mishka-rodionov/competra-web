@@ -25,7 +25,7 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompetitionDetailPage(competitionId: Long, onBack: () -> Unit) {
+fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
     val repo: CompetitionRepository = koinInject()
     var competition by remember { mutableStateOf<OrienteeringCompetition?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
