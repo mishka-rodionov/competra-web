@@ -23,6 +23,20 @@ data class CodeVerificationRequest(
 
 @Serializable
 data class AuthResponse(
+    @SerialName("user")  val user: UserInfo? = null,
+    @SerialName("token") val token: TokenInfo,
+)
+
+@Serializable
+data class UserInfo(
+    @SerialName("id")         val id: String? = null,
+    @SerialName("first_name") val firstName: String? = null,
+    @SerialName("last_name")  val lastName: String? = null,
+    @SerialName("email")      val email: String? = null,
+)
+
+@Serializable
+data class TokenInfo(
     @SerialName("accessToken")  val accessToken: String,
     @SerialName("refreshToken") val refreshToken: String,
 )
@@ -45,7 +59,7 @@ class AuthRepository(
             }.body<CommonModel<AuthResponse>>()
         }
         if (result is ApiResult.Success) {
-            tokenStorage.saveToken(result.data.accessToken)
+            tokenStorage.saveToken(result.data.token.accessToken)
         }
         return result
     }
