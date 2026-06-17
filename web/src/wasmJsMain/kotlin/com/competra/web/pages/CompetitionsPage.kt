@@ -34,7 +34,10 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompetitionsPage(onCompetitionClick: (Long) -> Unit) {
+fun CompetitionsPage(
+    modifier: Modifier = Modifier,
+    onCompetitionClick: (Long) -> Unit,
+) {
     val repo: CompetitionRepository = koinInject()
     var selectedTab by remember { mutableIntStateOf(0) }
     var publicList by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
@@ -54,6 +57,7 @@ fun CompetitionsPage(onCompetitionClick: (Long) -> Unit) {
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = { TopAppBar(title = { Text("Соревнования") }) }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
