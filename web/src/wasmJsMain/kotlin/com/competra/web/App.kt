@@ -15,6 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
 import com.competra.web.pages.ProfilePage
@@ -48,8 +51,8 @@ fun App() {
 private fun NavIcon(selected: Boolean, label: String) {
     val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
-        modifier = androidx.compose.ui.Modifier.size(24.dp).background(color, CircleShape),
-        contentAlignment = androidx.compose.ui.Alignment.Center,
+        modifier = Modifier.size(24.dp).background(color, CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Text(label, color = MaterialTheme.colorScheme.surface, style = MaterialTheme.typography.labelSmall)
     }
@@ -77,7 +80,7 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
     ) { padding ->
         when (currentPage) {
             is Page.Competitions -> CompetitionsPage(
-                modifier = androidx.compose.ui.Modifier.padding(padding),
+                modifier = Modifier.padding(padding),
                 onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
             )
             is Page.Profile -> ProfilePage(
