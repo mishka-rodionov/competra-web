@@ -48,16 +48,23 @@ fun CompetitionsPage(
     var publicList by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
     var myList by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         when (val r = repo.getPublicCompetitions()) {
-            is ApiResult.Success -> publicList = r.data
-            else -> {}
+            is ApiResult.Success -> {
+                println("Public competitions loaded: ${r.data.size}")
+                publicList = r.data
+            }
+            is ApiResult.Error -> {
+                println("Public competitions error: ${r.message}")
+                error = r.message
+            }
         }
         if (isLoggedIn) {
             when (val r = repo.getMyCompetitions()) {
                 is ApiResult.Success -> myList = r.data
-                else -> {}
+                is ApiResult.Error -> println("My competitions error: ${r.message}")
             }
         }
         loading = false
@@ -71,6 +78,14 @@ fun CompetitionsPage(
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Публичные") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Мои") })
+            }
+            error?.let {
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.padding(16.dp))
