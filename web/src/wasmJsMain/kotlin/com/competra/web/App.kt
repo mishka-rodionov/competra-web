@@ -1,6 +1,11 @@
 package com.competra.web
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -14,8 +19,6 @@ import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
 import com.competra.web.pages.ProfilePage
 import com.competra.web.theme.CompetiraTheme
-import org.koin.compose.koinInject
-import com.competra.data.auth.TokenStorage
 
 sealed class Page {
     data object Competitions : Page()
@@ -42,6 +45,17 @@ fun App() {
 }
 
 @Composable
+private fun NavIcon(selected: Boolean, label: String) {
+    val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        modifier = androidx.compose.ui.Modifier.size(24.dp).background(color, CircleShape),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.surface, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
 private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
     Scaffold(
         bottomBar = {
@@ -49,13 +63,13 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                 NavigationBarItem(
                     selected = currentPage is Page.Competitions,
                     onClick = { onNavigate(Page.Competitions) },
-                    icon = { Text("🏆") },
+                    icon = { NavIcon(selected = currentPage is Page.Competitions, label = "С") },
                     label = { Text("Соревнования") },
                 )
                 NavigationBarItem(
                     selected = currentPage is Page.Profile,
                     onClick = { onNavigate(Page.Profile) },
-                    icon = { Text("👤") },
+                    icon = { NavIcon(selected = currentPage is Page.Profile, label = "П") },
                     label = { Text("Профиль") },
                 )
             }

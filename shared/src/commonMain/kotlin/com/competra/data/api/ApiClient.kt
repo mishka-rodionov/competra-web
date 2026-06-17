@@ -14,16 +14,19 @@ import kotlinx.serialization.json.Json
 
 const val BASE_URL = "https://competra.ru/api"
 
+private val jsonConfig = Json { ignoreUnknownKeys = true; isLenient = true }
+
+/** Клиент без авторизации — для публичных эндпоинтов. */
+fun createPublicHttpClient(): HttpClient = HttpClient {
+    install(ContentNegotiation) { json(jsonConfig) }
+    install(Logging) { level = LogLevel.INFO }
+    defaultRequest { contentType(ContentType.Application.Json) }
+}
+
+/** Клиент с Bearer-токеном — для авторизованных эндпоинтов. */
 fun createHttpClient(tokenStorage: TokenStorage): HttpClient = HttpClient {
-    install(ContentNegotiation) {
-        json(Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-        })
-    }
-    install(Logging) {
-        level = LogLevel.INFO
-    }
+    install(ContentNegotiation) { json(jsonConfig) }
+    install(Logging) { level = LogLevel.INFO }
     defaultRequest {
         contentType(ContentType.Application.Json)
         val token = tokenStorage.getToken()
