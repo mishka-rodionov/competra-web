@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
@@ -5,8 +7,9 @@ plugins {
 }
 
 kotlin {
+    @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "competra"
+        outputModuleName.set("competra")
         browser {
             commonWebpackConfig {
                 outputFileName = "competra.js"
@@ -25,11 +28,8 @@ kotlin {
                 implementation(compose.material3)
                 implementation(compose.components.resources)
                 implementation(libs.koin.compose)
+                implementation(libs.ktor.client.core)
             }
         }
     }
-}
-
-compose.experimental {
-    web.application {}
 }

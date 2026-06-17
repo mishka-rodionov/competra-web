@@ -1,5 +1,7 @@
 rootProject.name = "competra-web"
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
         google()
@@ -12,11 +14,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-    }
-    versionCatalogs {
-        create("libs") {
-            from(files("gradle/libs.versions.toml"))
-        }
     }
 }
 

@@ -1,10 +1,17 @@
 package com.competra.data.auth
 
-import kotlinx.browser.localStorage
+@JsFun("(key) => localStorage.getItem(key) ?? null")
+private external fun jsGet(key: String): String?
+
+@JsFun("(key, value) => { localStorage.setItem(key, value) }")
+private external fun jsSet(key: String, value: String)
+
+@JsFun("(key) => { localStorage.removeItem(key) }")
+private external fun jsRemove(key: String)
 
 class LocalStorageTokenStorage : TokenStorage {
     private val KEY = "competra_access_token"
-    override fun getToken(): String? = localStorage.getItem(KEY)
-    override fun saveToken(token: String) { localStorage.setItem(KEY, token) }
-    override fun clearToken() { localStorage.removeItem(KEY) }
+    override fun getToken(): String? = jsGet(KEY)
+    override fun saveToken(token: String) = jsSet(KEY, token)
+    override fun clearToken() = jsRemove(KEY)
 }

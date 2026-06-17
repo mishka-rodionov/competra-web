@@ -1,9 +1,12 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
+    @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
     }
@@ -12,6 +15,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.neg)
+            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.json)
             implementation(libs.kotlinx.serialization)
             implementation(libs.kotlinx.coroutines)

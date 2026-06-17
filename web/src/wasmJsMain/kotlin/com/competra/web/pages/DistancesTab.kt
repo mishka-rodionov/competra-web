@@ -2,13 +2,11 @@ package com.competra.web.pages
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -20,13 +18,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.repository.DistanceRepository
 import com.competra.domain.models.Distance
-import com.competra.web.components.FileUploadButton
+import com.competra.web.components.XmlImportField
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -49,29 +46,22 @@ fun DistancesTab(competitionId: Long) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(
+        Text("Дистанции", style = MaterialTheme.typography.titleMedium)
+
+        XmlImportField(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Дистанции", style = MaterialTheme.typography.titleMedium)
-            FileUploadButton(
-                label = "Импорт из Mapper",
-                accept = ".xml",
-                enabled = !importing,
-                onFileSelected = { bytes ->
-                    scope.launch {
-                        importing = true
-                        error = null
-                        when (val r = repo.importFromXml(competitionId, bytes)) {
-                            is ApiResult.Success -> distances = r.data
-                            is ApiResult.Error   -> error = r.message
-                        }
-                        importing = false
+            onXmlReady = { bytes ->
+                scope.launch {
+                    importing = true
+                    error = null
+                    when (val r = repo.importFromXml(competitionId, bytes)) {
+                        is ApiResult.Success -> distances = r.data
+                        is ApiResult.Error   -> error = r.message
                     }
-                },
-            )
-        }
+                    importing = false
+                }
+            },
+        )
 
         if (importing) CircularProgressIndicator(modifier = Modifier.padding(8.dp))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
