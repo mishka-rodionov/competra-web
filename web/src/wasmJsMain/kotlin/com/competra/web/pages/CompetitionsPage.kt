@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -27,11 +26,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
+import com.competra.domain.models.Competition
 import com.competra.domain.models.OrienteeringCompetition
 import org.koin.compose.koinInject
 
@@ -45,7 +46,7 @@ fun CompetitionsPage(
     val tokenStorage: TokenStorage = koinInject()
     val isLoggedIn = tokenStorage.isLoggedIn()
     var selectedTab by remember { mutableIntStateOf(0) }
-    var publicList by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
+    var publicList by remember { mutableStateOf<List<Competition>>(emptyList()) }
     var myList by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -100,14 +101,25 @@ fun CompetitionsPage(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else {
-                val items = if (selectedTab == 0) publicList else myList
+            } else if (selectedTab == 0) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(items) { competition ->
-                        CompetitionCard(
+                    items(publicList) { competition ->
+                        PublicCompetitionCard(
+                            competition = competition,
+                            onClick = { competition.remoteId?.let { onCompetitionClick(it.toString()) } },
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(myList) { competition ->
+                        MyCompetitionCard(
                             competition = competition,
                             onClick = { onCompetitionClick(competition.competitionId) },
                         )
@@ -119,7 +131,27 @@ fun CompetitionsPage(
 }
 
 @Composable
-private fun CompetitionCard(competition: OrienteeringCompetition, onClick: () -> Unit) {
+private fun PublicCompetitionCard(competition: Competition, onClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(competition.title, style = MaterialTheme.typography.titleMedium)
+                competition.address?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
+            Text(
+                competition.status,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MyCompetitionCard(competition: OrienteeringCompetition, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -127,9 +159,7 @@ private fun CompetitionCard(competition: OrienteeringCompetition, onClick: () ->
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(competition.competition.title, style = MaterialTheme.typography.titleMedium)
-                competition.competition.address?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall)
-                }
+                competition.competition.address?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
             Text(
                 competition.competition.status,

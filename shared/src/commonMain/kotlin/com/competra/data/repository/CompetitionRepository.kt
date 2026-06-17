@@ -4,6 +4,7 @@ import com.competra.data.api.ApiResult
 import com.competra.data.api.BASE_URL
 import com.competra.data.api.CommonModel
 import com.competra.data.api.safeApiCall
+import com.competra.domain.models.Competition
 import com.competra.domain.models.OrienteeringCompetition
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -17,11 +18,11 @@ class CompetitionRepository(
     suspend fun getPublicCompetitions(
         kindOfSports: List<String> = emptyList(),
         statuses: List<String> = emptyList(),
-    ): ApiResult<List<OrienteeringCompetition>> = safeApiCall {
+    ): ApiResult<List<Competition>> = safeApiCall {
         publicClient.get("$BASE_URL/event/orienteering/competitions/public") {
             kindOfSports.forEach { parameter("kind_of_sports", it) }
             statuses.forEach { parameter("statuses", it) }
-        }.body<CommonModel<List<OrienteeringCompetition>>>()
+        }.body<CommonModel<List<Competition>>>()
     }
 
     suspend fun getMyCompetitions(): ApiResult<List<OrienteeringCompetition>> = safeApiCall {
