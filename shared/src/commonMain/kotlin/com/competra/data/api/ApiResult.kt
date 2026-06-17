@@ -31,3 +31,13 @@ suspend fun <T> safeApiCall(call: suspend () -> CommonModel<T>): ApiResult<T> =
     } catch (e: Exception) {
         ApiResult.Error(e.message ?: "Network error")
     }
+
+/** For endpoints that return {"status":1} with no result body. */
+suspend fun safeApiCallUnit(call: suspend () -> CommonModel<Unit?>): ApiResult<Unit> =
+    try {
+        val response = call()
+        if (response.status == 1) ApiResult.Success(Unit)
+        else ApiResult.Error(response.errors?.firstOrNull()?.message ?: "Unknown error")
+    } catch (e: Exception) {
+        ApiResult.Error(e.message ?: "Network error")
+    }

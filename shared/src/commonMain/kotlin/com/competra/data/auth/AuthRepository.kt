@@ -4,6 +4,7 @@ import com.competra.data.api.ApiResult
 import com.competra.data.api.BASE_URL
 import com.competra.data.api.CommonModel
 import com.competra.data.api.safeApiCall
+import com.competra.data.api.safeApiCallUnit
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -31,10 +32,10 @@ class AuthRepository(
     private val tokenStorage: TokenStorage,
 ) {
     suspend fun sendCode(email: String): ApiResult<Unit> =
-        safeApiCall {
+        safeApiCallUnit {
             client.post("$BASE_URL/user/login") {
                 setBody(EmailRequest(email))
-            }.body<CommonModel<Unit>>()
+            }.body<CommonModel<Unit?>>()
         }
 
     suspend fun verifyCode(email: String, code: String): ApiResult<AuthResponse> {
