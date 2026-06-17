@@ -53,6 +53,9 @@ Compose Multiplatform UI, рендерится через `ComposeViewport(docum
 
 **Токен**: хранится в `localStorage` под ключом `competra_access_token`. Нативный JS вызывается через `@JsFun`.
 
+## Commands
+- Always use rtk for commands (rtk grep, rtk find, rtk git, and etc.)
+
 ## Межпроектные связи
 
 Этот проект — часть экосистемы из четырёх репозиториев:
