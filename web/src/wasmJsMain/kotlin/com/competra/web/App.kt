@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
+import com.competra.web.pages.CreateCompetitionPage
 import com.competra.web.pages.ProfilePage
 import com.competra.web.theme.CompetiraTheme
 
@@ -27,6 +28,7 @@ sealed class Page {
     data object Competitions : Page()
     data class CompetitionDetail(val competitionId: String) : Page()
     data object Profile : Page()
+    data object CreateCompetition : Page()
 }
 
 @Composable
@@ -38,6 +40,10 @@ fun App() {
             is Page.CompetitionDetail -> CompetitionDetailPage(
                 competitionId = current.competitionId,
                 onBack = { page = Page.Competitions },
+            )
+            is Page.CreateCompetition -> CreateCompetitionPage(
+                onBack = { page = Page.Competitions },
+                onCreated = { id -> page = Page.CompetitionDetail(id) },
             )
             else -> MainScaffold(
                 currentPage = current,
@@ -82,9 +88,11 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
             is Page.Competitions -> CompetitionsPage(
                 modifier = Modifier.padding(padding),
                 onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
+                onCreateClick = { onNavigate(Page.CreateCompetition) },
             )
             is Page.Profile -> ProfilePage(
                 onLoginSuccess = { onNavigate(Page.Competitions) },
+                onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
             )
             else -> {}
         }
