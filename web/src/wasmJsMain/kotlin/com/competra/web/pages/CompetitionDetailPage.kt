@@ -141,7 +141,7 @@ fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
                         }
                     },
                 )
-                2 -> DistancesTab(competitionId = competitionId)
+                2 -> DistancesTab(remoteId = competitionId.toLongOrNull())
                 3 -> ResultsTab(competitionId = competitionId, groups = d.participantGroups)
             }
         }

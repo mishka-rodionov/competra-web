@@ -103,6 +103,7 @@ data class CompetitionFields(
     @SerialName("contactPhone")       val contactPhone: String? = null,
     @SerialName("contactEmail")       val contactEmail: String? = null,
     @SerialName("website")            val website: String? = null,
+    @SerialName("resultsStatus")      val resultsStatus: String = "NOT_PUBLISHED",
     @SerialName("timeZoneId")         val timeZoneId: String = "Europe/Moscow",
 )
 

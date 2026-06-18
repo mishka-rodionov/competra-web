@@ -94,7 +94,7 @@ fun ManageCompetitionPage(
             when (selectedTab) {
                 0 -> EditTab(competition)
                 1 -> GroupsTab(competition)
-                2 -> DistancesTab(competitionId = competition.competitionId, showImport = true)
+                2 -> DistancesTab(remoteId = competition.competition.remoteId, showImport = true)
             }
         }
     }
@@ -368,7 +368,7 @@ private fun GroupsTab(competition: OrienteeringCompetition) {
             is ApiResult.Success -> groups = r.data
             is ApiResult.Error -> error = r.message
         }
-        when (val r = distanceRepo.getByCompetition(competition.competitionId)) {
+        when (val r = distanceRepo.getByCompetition(remoteId)) {
             is ApiResult.Success -> distances = r.data
             is ApiResult.Error -> {}
         }
