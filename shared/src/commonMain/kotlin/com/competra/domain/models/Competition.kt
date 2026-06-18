@@ -22,6 +22,11 @@ data class Competition(
     @SerialName("timeZoneId")      val timeZoneId: String = "",
     @SerialName("registrationStart") val registrationStart: Long? = null,
     @SerialName("registrationEnd")   val registrationEnd: Long? = null,
+    @SerialName("mainOrganizerId") val mainOrganizerId: String? = null,
+    @SerialName("website")         val website: String? = null,
+    @SerialName("regulationUrl")   val regulationUrl: String? = null,
+    @SerialName("mapUrl")          val mapUrl: String? = null,
+    @SerialName("resultsStatus")   val resultsStatus: String = "NOT_PUBLISHED",
 )
 
 @Serializable
@@ -100,18 +105,24 @@ data class CompetitionFields(
     @SerialName("maxParticipants")    val maxParticipants: Int? = null,
     @SerialName("feeAmount")          val feeAmount: Double? = null,
     @SerialName("feeCurrency")        val feeCurrency: String? = null,
+    @SerialName("mainOrganizerId")    val mainOrganizerId: String? = null,
     @SerialName("contactPhone")       val contactPhone: String? = null,
     @SerialName("contactEmail")       val contactEmail: String? = null,
     @SerialName("website")            val website: String? = null,
+    @SerialName("regulationUrl")      val regulationUrl: String? = null,
+    @SerialName("mapUrl")             val mapUrl: String? = null,
+    @SerialName("imageUrl")           val imageUrl: String? = null,
     @SerialName("resultsStatus")      val resultsStatus: String = "NOT_PUBLISHED",
     @SerialName("timeZoneId")         val timeZoneId: String = "Europe/Moscow",
 )
 
 @Serializable
 data class CreateCompetitionRequest(
-    @SerialName("competitionId")  val competitionId: String,
-    @SerialName("competition")    val competition: CompetitionFields,
-    @SerialName("direction")      val direction: String = "FORWARD",
-    @SerialName("punchingSystem") val punchingSystem: String = "SPORTIDENT",
-    @SerialName("startTimeMode")  val startTimeMode: String = "USER_SET",
+    @SerialName("competitionId")        val competitionId: String,
+    @SerialName("competition")          val competition: CompetitionFields,
+    @SerialName("direction")            val direction: String = "FORWARD",
+    @SerialName("punchingSystem")       val punchingSystem: String = "SPORTIDENT",
+    @SerialName("startTimeMode")        val startTimeMode: String = "USER_SET",
+    @SerialName("startIntervalSeconds") val startIntervalSeconds: Int? = null,
+    @SerialName("countdownTimer")       val countdownTimer: Long? = null,
 )

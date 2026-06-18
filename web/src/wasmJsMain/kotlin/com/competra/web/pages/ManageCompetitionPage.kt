@@ -49,8 +49,14 @@ import com.competra.domain.models.CreateGroupRequest
 import com.competra.domain.models.Distance
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.ParticipantGroupDetail
-import com.competra.web.utils.parseDateStringToMillis
-import com.competra.web.utils.toDateInputString
+import com.competra.web.components.DateField
+import com.competra.web.components.LabeledDropdown
+import com.competra.web.components.TimeField
+import com.competra.web.components.TimeZoneField
+import com.competra.web.utils.DEFAULT_TIME_ZONE
+import com.competra.web.utils.utcMillisToZonedDate
+import com.competra.web.utils.utcMillisToZonedTime
+import com.competra.web.utils.zonedDateTimeToUtcMillis
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -106,18 +112,30 @@ private fun EditTab(competition: OrienteeringCompetition) {
     val repo: CompetitionRepository = koinInject()
     val scope = rememberCoroutineScope()
     val c = competition.competition
+    val zoneId = remember(c.timeZoneId) { c.timeZoneId.ifBlank { DEFAULT_TIME_ZONE } }
 
     var title by remember { mutableStateOf(c.title) }
-    var startDate by remember { mutableStateOf(c.startDate.toDateInputString()) }
-    var endDate by remember { mutableStateOf(c.endDate?.toDateInputString() ?: "") }
+    var startMillis by remember { mutableStateOf<Long?>(c.startDate.takeIf { it > 0 }) }
+    var startTime by remember { mutableStateOf(c.startDate.takeIf { it > 0 }?.let { utcMillisToZonedTime(it, zoneId) } ?: "10:00") }
+    var selectedZone by remember { mutableStateOf(zoneId) }
+    var endMillis by remember { mutableStateOf(c.endDate) }
     var address by remember { mutableStateOf(c.address ?: "") }
     var description by remember { mutableStateOf(c.description ?: "") }
-    var registrationStart by remember { mutableStateOf(c.registrationStart?.toDateInputString() ?: "") }
-    var registrationEnd by remember { mutableStateOf(c.registrationEnd?.toDateInputString() ?: "") }
+    var direction by remember { mutableStateOf(competition.direction.ifBlank { "FORWARD" }) }
+    var punchingSystem by remember { mutableStateOf(competition.punchingSystem.ifBlank { "SPORTIDENT" }) }
+    var startTimeMode by remember { mutableStateOf(competition.startTimeMode.ifBlank { "USER_SET" }) }
+    var startInterval by remember { mutableIntStateOf(competition.startIntervalSeconds ?: 60) }
+    var registrationStartMillis by remember { mutableStateOf(c.registrationStart) }
+    var registrationStartTime by remember { mutableStateOf(c.registrationStart?.let { utcMillisToZonedTime(it, zoneId) } ?: "10:00") }
+    var registrationEndMillis by remember { mutableStateOf(c.registrationEnd) }
+    var registrationEndTime by remember { mutableStateOf(c.registrationEnd?.let { utcMillisToZonedTime(it, zoneId) } ?: "23:59") }
     var maxParticipants by remember { mutableStateOf(c.maxParticipants?.toString() ?: "") }
     var feeAmount by remember { mutableStateOf(c.feeAmount?.let { if (it > 0) it.toInt().toString() else "" } ?: "") }
     var contactEmail by remember { mutableStateOf(c.contactEmail ?: "") }
     var contactPhone by remember { mutableStateOf(c.contactPhone ?: "") }
+    var website by remember { mutableStateOf(c.website ?: "") }
+    var regulationUrl by remember { mutableStateOf(c.regulationUrl ?: "") }
+    var mapUrl by remember { mutableStateOf(c.mapUrl ?: "") }
     var selectedStatus by remember { mutableStateOf(c.status) }
     var statusExpanded by remember { mutableStateOf(false) }
 
@@ -150,25 +168,27 @@ private fun EditTab(competition: OrienteeringCompetition) {
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = startDate,
-                    onValueChange = { startDate = it },
-                    label = { Text("Дата начала *") },
-                    placeholder = { Text("ГГГГ-ММ-ДД") },
+                DateField(
+                    label = "Дата начала *",
+                    displayValue = startMillis?.let { utcMillisToZonedDate(it, "UTC") } ?: "",
+                    initialUtcMillis = startMillis,
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    onPick = { startMillis = it },
                 )
-                OutlinedTextField(
-                    value = endDate,
-                    onValueChange = { endDate = it },
-                    label = { Text("Дата окончания") },
-                    placeholder = { Text("ГГГГ-ММ-ДД") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                )
+                TimeField(label = "Время старта", value = startTime, modifier = Modifier.weight(1f), onChange = { startTime = it })
             }
+        }
+
+        item { TimeZoneField(zoneId = selectedZone, modifier = Modifier.fillMaxWidth(), onSelect = { selectedZone = it }) }
+
+        item {
+            DateField(
+                label = "Дата окончания",
+                displayValue = endMillis?.let { utcMillisToZonedDate(it, "UTC") } ?: "",
+                initialUtcMillis = endMillis,
+                modifier = Modifier.fillMaxWidth(),
+                onPick = { endMillis = it },
+            )
         }
 
         item {
@@ -219,28 +239,43 @@ private fun EditTab(competition: OrienteeringCompetition) {
             }
         }
 
+        item { Text("Параметры ориентирования", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp)) }
+        item { LabeledDropdown("Направление", direction, DIRECTION_OPTIONS, Modifier.fillMaxWidth()) { direction = it } }
+        item { LabeledDropdown("Система отметки", punchingSystem, PUNCHING_SYSTEM_OPTIONS, Modifier.fillMaxWidth()) { punchingSystem = it } }
+        item { LabeledDropdown("Режим старта", startTimeMode, START_TIME_MODE_OPTIONS, Modifier.fillMaxWidth()) { startTimeMode = it } }
+        item {
+            LabeledDropdown(
+                "Интервал старта", startInterval,
+                START_INTERVAL_OPTIONS.map { it to formatIntervalSeconds(it) },
+                Modifier.fillMaxWidth(),
+            ) { startInterval = it }
+        }
+
         item { Text("Регистрация", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp)) }
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = registrationStart,
-                    onValueChange = { registrationStart = it },
-                    label = { Text("Начало регистрации") },
-                    placeholder = { Text("ГГГГ-ММ-ДД") },
+                DateField(
+                    label = "Начало регистрации",
+                    displayValue = registrationStartMillis?.let { utcMillisToZonedDate(it, "UTC") } ?: "",
+                    initialUtcMillis = registrationStartMillis,
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    onPick = { registrationStartMillis = it },
                 )
-                OutlinedTextField(
-                    value = registrationEnd,
-                    onValueChange = { registrationEnd = it },
-                    label = { Text("Конец регистрации") },
-                    placeholder = { Text("ГГГГ-ММ-ДД") },
+                TimeField(label = "Время", value = registrationStartTime, modifier = Modifier.weight(1f), onChange = { registrationStartTime = it })
+            }
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DateField(
+                    label = "Конец регистрации",
+                    displayValue = registrationEndMillis?.let { utcMillisToZonedDate(it, "UTC") } ?: "",
+                    initialUtcMillis = registrationEndMillis,
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    onPick = { registrationEndMillis = it },
                 )
+                TimeField(label = "Время", value = registrationEndTime, modifier = Modifier.weight(1f), onChange = { registrationEndTime = it })
             }
         }
 
@@ -287,6 +322,33 @@ private fun EditTab(competition: OrienteeringCompetition) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             )
         }
+        item {
+            OutlinedTextField(
+                value = website,
+                onValueChange = { website = it },
+                label = { Text("Сайт соревнования") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
+        item {
+            OutlinedTextField(
+                value = regulationUrl,
+                onValueChange = { regulationUrl = it },
+                label = { Text("Ссылка на положение") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
+        item {
+            OutlinedTextField(
+                value = mapUrl,
+                onValueChange = { mapUrl = it },
+                label = { Text("Ссылка на карту") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
 
         error?.let { err ->
             item {
@@ -308,9 +370,9 @@ private fun EditTab(competition: OrienteeringCompetition) {
         item {
             Button(
                 onClick = {
-                    val startMs = parseDateStringToMillis(startDate)
+                    val startDay = startMillis
                     if (title.isBlank()) { error = "Укажите название"; return@Button }
-                    if (startMs == null) { error = "Укажите дату начала в формате ГГГГ-ММ-ДД"; return@Button }
+                    if (startDay == null) { error = "Укажите дату начала"; return@Button }
 
                     scope.launch {
                         saving = true
@@ -320,20 +382,31 @@ private fun EditTab(competition: OrienteeringCompetition) {
                             competitionId = competition.competitionId,
                             competition = CompetitionFields(
                                 title = title.trim(),
-                                startDate = startMs,
-                                endDate = if (endDate.isNotBlank()) parseDateStringToMillis(endDate) else null,
+                                startDate = zonedDateTimeToUtcMillis(startDay, startTime, selectedZone),
+                                endDate = endMillis,
                                 kindOfSport = c.kindOfSport.ifBlank { "Orienteering" },
                                 description = description.trimOrNull(),
                                 address = address.trimOrNull(),
                                 status = selectedStatus,
-                                registrationStart = if (registrationStart.isNotBlank()) parseDateStringToMillis(registrationStart) else null,
-                                registrationEnd = if (registrationEnd.isNotBlank()) parseDateStringToMillis(registrationEnd) else null,
+                                registrationStart = registrationStartMillis?.let { zonedDateTimeToUtcMillis(it, registrationStartTime, selectedZone) },
+                                registrationEnd = registrationEndMillis?.let { zonedDateTimeToUtcMillis(it, registrationEndTime, selectedZone) },
                                 maxParticipants = maxParticipants.toIntOrNull(),
                                 feeAmount = feeAmount.toDoubleOrNull(),
-                                feeCurrency = if (feeAmount.isNotBlank()) "RUB" else null,
+                                feeCurrency = if (feeAmount.isNotBlank()) "RUB" else c.feeCurrency,
+                                mainOrganizerId = c.mainOrganizerId,
                                 contactEmail = contactEmail.trimOrNull(),
                                 contactPhone = contactPhone.trimOrNull(),
+                                website = website.trimOrNull(),
+                                regulationUrl = regulationUrl.trimOrNull(),
+                                mapUrl = mapUrl.trimOrNull(),
+                                imageUrl = c.imageUrl,
+                                resultsStatus = c.resultsStatus,
+                                timeZoneId = selectedZone,
                             ),
+                            direction = direction,
+                            punchingSystem = punchingSystem,
+                            startTimeMode = startTimeMode,
+                            startIntervalSeconds = startInterval,
                         )
                         when (val r = repo.createCompetition(request)) {
                             is ApiResult.Success -> success = true

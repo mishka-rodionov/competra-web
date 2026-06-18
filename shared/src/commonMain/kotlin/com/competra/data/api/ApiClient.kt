@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
 
 const val BASE_URL = "https://competra.ru/api"
 
-private val jsonConfig = Json { ignoreUnknownKeys = true; isLenient = true }
+private val jsonConfig = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
 
 /** Клиент без авторизации — для публичных эндпоинтов. */
 fun createPublicHttpClient(): HttpClient = HttpClient {

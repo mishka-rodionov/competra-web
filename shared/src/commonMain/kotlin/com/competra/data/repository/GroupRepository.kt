@@ -29,6 +29,13 @@ class GroupRepository(private val authClient: HttpClient) {
         }.body<CommonModel<List<ParticipantGroupDetail>>>()
     }
 
+    /** Сохраняет список групп одним запросом. */
+    suspend fun saveGroups(requests: List<CreateGroupRequest>): ApiResult<List<ParticipantGroupDetail>> = safeApiCall {
+        authClient.post("$BASE_URL/event/orienteering/save/participantGroup") {
+            setBody(requests)
+        }.body<CommonModel<List<ParticipantGroupDetail>>>()
+    }
+
     suspend fun deleteGroup(groupId: Long): ApiResult<Unit> = safeApiCallUnit {
         authClient.delete("$BASE_URL/event/orienteering/participantGroups/$groupId")
             .body<CommonModel<Unit?>>()

@@ -31,6 +31,17 @@ class DistanceRepository(private val client: HttpClient) {
         }.body<CommonModel<List<Distance>>>()
     }
 
+    /**
+     * Сохраняет список дистанций одним запросом. Бэкенд (`DistanceService.upsertAll`)
+     * возвращает дистанции в том же порядке, что и запрос, поэтому ответ можно сопоставлять
+     * с исходным списком по индексу.
+     */
+    suspend fun saveDistances(requests: List<SaveDistanceRequest>): ApiResult<List<Distance>> = safeApiCall {
+        client.post("$BASE_URL/event/orienteering/save/distances") {
+            setBody(requests)
+        }.body<CommonModel<List<Distance>>>()
+    }
+
     suspend fun importFromXml(remoteId: Long, xmlBytes: ByteArray): ApiResult<List<Distance>> =
         safeApiCall {
             client.post("$BASE_URL/event/orienteering/import/courses") {
