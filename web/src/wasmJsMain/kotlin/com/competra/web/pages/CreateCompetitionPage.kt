@@ -32,6 +32,7 @@ import com.competra.data.api.ApiResult
 import com.competra.data.repository.CompetitionRepository
 import com.competra.domain.models.CompetitionFields
 import com.competra.domain.models.CreateCompetitionRequest
+import com.competra.domain.models.OrienteeringCompetition
 import com.competra.web.utils.generateUUID
 import com.competra.web.utils.parseDateStringToMillis
 import kotlinx.coroutines.launch
@@ -41,7 +42,7 @@ import org.koin.compose.koinInject
 @Composable
 fun CreateCompetitionPage(
     onBack: () -> Unit,
-    onCreated: (competitionId: String) -> Unit,
+    onCreated: (OrienteeringCompetition) -> Unit,
 ) {
     val repo: CompetitionRepository = koinInject()
     val scope = rememberCoroutineScope()
@@ -243,7 +244,7 @@ fun CreateCompetitionPage(
                                 ),
                             )
                             when (val r = repo.createCompetition(request)) {
-                                is ApiResult.Success -> onCreated(r.data.competitionId)
+                                is ApiResult.Success -> onCreated(r.data)
                                 is ApiResult.Error -> {
                                     error = r.message
                                     saving = false

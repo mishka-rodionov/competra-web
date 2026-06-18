@@ -7,6 +7,7 @@ import com.competra.data.auth.LocalStorageTokenStorage
 import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
+import com.competra.data.repository.GroupRepository
 import com.competra.data.repository.ResultRepository
 import com.competra.data.repository.UserRepository
 import org.koin.core.qualifier.named
@@ -21,4 +22,5 @@ val appModule = module {
     single { DistanceRepository(get(named("auth"))) }
     single { ResultRepository(publicClient = get(named("public"))) }
     single { UserRepository(authClient = get(named("auth"))) }
+    single { GroupRepository(authClient = get(named("auth"))) }
 }

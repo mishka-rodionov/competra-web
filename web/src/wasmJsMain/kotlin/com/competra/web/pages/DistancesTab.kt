@@ -1,6 +1,7 @@
 package com.competra.web.pages
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
@@ -28,7 +30,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
-fun DistancesTab(competitionId: String) {
+fun DistancesTab(competitionId: String, showImport: Boolean = false) {
     val repo: DistanceRepository = koinInject()
     val scope = rememberCoroutineScope()
 
@@ -46,38 +48,43 @@ fun DistancesTab(competitionId: String) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Дистанции", style = MaterialTheme.typography.titleMedium)
-
-        XmlImportField(
-            modifier = Modifier.fillMaxWidth(),
-            onXmlReady = { bytes ->
-                scope.launch {
-                    importing = true
-                    error = null
-                    when (val r = repo.importFromXml(competitionId, bytes)) {
-                        is ApiResult.Success -> distances = r.data
-                        is ApiResult.Error   -> error = r.message
+        if (showImport) {
+            Text("Импорт из Mapper", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(bottom = 8.dp))
+            XmlImportField(
+                modifier = Modifier.fillMaxWidth(),
+                onXmlReady = { bytes ->
+                    scope.launch {
+                        importing = true
+                        error = null
+                        when (val r = repo.importFromXml(competitionId, bytes)) {
+                            is ApiResult.Success -> distances = r.data
+                            is ApiResult.Error   -> error = r.message
+                        }
+                        importing = false
                     }
-                    importing = false
-                }
-            },
-        )
+                },
+            )
+            if (importing) CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+        }
 
-        if (importing) CircularProgressIndicator(modifier = Modifier.padding(8.dp))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
 
         if (loading) {
             CircularProgressIndicator(modifier = Modifier.padding(8.dp))
         } else if (distances.isEmpty()) {
-            Text(
-                "Нет дистанций. Импортируйте из Mapper или добавьте вручную.",
-                modifier = Modifier.padding(top = 16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    if (showImport) "Нет дистанций. Импортируйте из Mapper выше." else "Дистанции не добавлены",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         } else {
+            if (showImport) {
+                Text("Дистанции", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+            }
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(top = 12.dp),
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(distances) { DistanceCard(it) }
@@ -87,7 +94,7 @@ fun DistancesTab(competitionId: String) {
 }
 
 @Composable
-private fun DistanceCard(distance: Distance) {
+internal fun DistanceCard(distance: Distance) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(distance.name ?: "Без названия", style = MaterialTheme.typography.titleSmall)

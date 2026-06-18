@@ -4,6 +4,18 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class CreateGroupRequest(
+    @SerialName("groupId")         val groupId: Long = 0,
+    @SerialName("competitionId")   val competitionId: Long,
+    @SerialName("title")           val title: String,
+    @SerialName("gender")          val gender: String? = null,
+    @SerialName("minAge")          val minAge: Int? = null,
+    @SerialName("maxAge")          val maxAge: Int? = null,
+    @SerialName("distanceId")      val distanceId: Long? = null,
+    @SerialName("maxParticipants") val maxParticipants: Int? = null,
+)
+
+@Serializable
 data class OrienteeringParticipant(
     @SerialName("id")            val id: String,
     @SerialName("userId")        val userId: String? = null,

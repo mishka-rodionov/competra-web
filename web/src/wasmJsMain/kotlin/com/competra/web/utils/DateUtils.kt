@@ -3,10 +3,15 @@ package com.competra.web.utils
 @JsFun("(ms) => new Date(ms).toLocaleDateString('ru-RU')")
 private external fun jsFormatDate(ms: Double): String
 
+@JsFun("(ms) => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }")
+private external fun jsToInputDate(ms: Double): String
+
 @JsFun("() => crypto.randomUUID()")
 external fun generateUUID(): String
 
 fun Long.toLocaleDateString(): String = jsFormatDate(this.toDouble())
+
+fun Long.toDateInputString(): String = jsToInputDate(this.toDouble())
 
 fun formatTime(totalSeconds: Long): String {
     val hours = totalSeconds / 3600

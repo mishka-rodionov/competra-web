@@ -18,17 +18,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.competra.domain.models.OrienteeringCompetition
 import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
 import com.competra.web.pages.CreateCompetitionPage
+import com.competra.web.pages.ManageCompetitionPage
+import com.competra.web.pages.ManagementPage
 import com.competra.web.pages.ProfilePage
 import com.competra.web.theme.CompetiraTheme
 
 sealed class Page {
     data object Competitions : Page()
     data class CompetitionDetail(val competitionId: String) : Page()
-    data object Profile : Page()
+    data object Management : Page()
     data object CreateCompetition : Page()
+    data class ManageCompetition(val competition: OrienteeringCompetition) : Page()
+    data object Profile : Page()
 }
 
 @Composable
@@ -42,13 +47,14 @@ fun App() {
                 onBack = { page = Page.Competitions },
             )
             is Page.CreateCompetition -> CreateCompetitionPage(
-                onBack = { page = Page.Competitions },
-                onCreated = { id -> page = Page.CompetitionDetail(id) },
+                onBack = { page = Page.Management },
+                onCreated = { competition -> page = Page.ManageCompetition(competition) },
             )
-            else -> MainScaffold(
-                currentPage = current,
-                onNavigate = { page = it },
+            is Page.ManageCompetition -> ManageCompetitionPage(
+                competition = current.competition,
+                onBack = { page = Page.Management },
             )
+            else -> MainScaffold(currentPage = current, onNavigate = { page = it })
         }
     }
 }
@@ -76,6 +82,12 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                     label = { Text("Соревнования") },
                 )
                 NavigationBarItem(
+                    selected = currentPage is Page.Management,
+                    onClick = { onNavigate(Page.Management) },
+                    icon = { NavIcon(selected = currentPage is Page.Management, label = "У") },
+                    label = { Text("Управление") },
+                )
+                NavigationBarItem(
                     selected = currentPage is Page.Profile,
                     onClick = { onNavigate(Page.Profile) },
                     icon = { NavIcon(selected = currentPage is Page.Profile, label = "П") },
@@ -88,7 +100,12 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
             is Page.Competitions -> CompetitionsPage(
                 modifier = Modifier.padding(padding),
                 onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
+            )
+            is Page.Management -> ManagementPage(
+                modifier = Modifier.padding(padding),
                 onCreateClick = { onNavigate(Page.CreateCompetition) },
+                onManageClick = { competition -> onNavigate(Page.ManageCompetition(competition)) },
+                onLoginSuccess = { onNavigate(Page.Competitions) },
             )
             is Page.Profile -> ProfilePage(
                 onLoginSuccess = { onNavigate(Page.Competitions) },

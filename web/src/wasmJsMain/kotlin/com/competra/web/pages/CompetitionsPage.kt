@@ -72,7 +72,6 @@ private val STATUSES = listOf(
 fun CompetitionsPage(
     modifier: Modifier = Modifier,
     onCompetitionClick: (String) -> Unit,
-    onCreateClick: () -> Unit,
 ) {
     val repo: CompetitionRepository = koinInject()
     val tokenStorage: TokenStorage = koinInject()
@@ -217,11 +216,6 @@ fun CompetitionsPage(
                     if (selectedTab == 0) {
                         TextButton(onClick = { showFilter = true }) {
                             Text(if (filter.isEmpty) "Фильтр" else "Фильтр ●")
-                        }
-                    }
-                    if (isLoggedIn) {
-                        TextButton(onClick = onCreateClick) {
-                            Text("+ Создать")
                         }
                     }
                 },
