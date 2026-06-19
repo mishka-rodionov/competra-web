@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,7 @@ import com.competra.data.api.ApiResult
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
+import com.competra.data.repository.UserRepository
 import com.competra.domain.models.CompetitionFields
 import com.competra.domain.models.ControlPoint
 import com.competra.domain.models.CreateCompetitionRequest
@@ -91,7 +93,18 @@ fun CreateCompetitionPage(
     val repo: CompetitionRepository = koinInject()
     val distanceRepo: DistanceRepository = koinInject()
     val groupRepo: GroupRepository = koinInject()
+    val userRepo: UserRepository = koinInject()
     val scope = rememberCoroutineScope()
+
+    var currentUserId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        if (currentUserId == null) {
+            when (val r = userRepo.getUserProfile()) {
+                is ApiResult.Success -> currentUserId = r.data.id
+                is ApiResult.Error -> {}
+            }
+        }
+    }
 
     var step by remember { mutableIntStateOf(0) }
 
@@ -170,6 +183,7 @@ fun CreateCompetitionPage(
                     maxParticipants = maxParticipants.toIntOrNull(),
                     feeAmount = feeAmount.toDoubleOrNull(),
                     feeCurrency = if (feeAmount.isNotBlank()) "RUB" else null,
+                    mainOrganizerId = currentUserId,
                     contactEmail = contactEmail.trimOrNull(),
                     contactPhone = contactPhone.trimOrNull(),
                     website = website.trimOrNull(),
