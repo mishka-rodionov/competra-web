@@ -201,8 +201,8 @@ fun CreateCompetitionPage(
                 is ApiResult.Success -> r.data
                 is ApiResult.Error -> { error = r.message; saving = false; return@launch }
             }
-            val remoteId = created.competition.remoteId
-            if (remoteId == null) {
+            val competitionId = created.competitionId
+            if (competitionId.isEmpty()) {
                 error = "Сервер не вернул идентификатор соревнования"
                 saving = false
                 return@launch
@@ -214,7 +214,7 @@ fun CreateCompetitionPage(
                 val distRequests = distances.map { d ->
                     SaveDistanceRequest(
                         distanceId = null,
-                        competitionId = remoteId,
+                        competitionId = competitionId,
                         name = d.name,
                         lengthMeters = d.lengthMeters,
                         climbMeters = d.climbMeters,
@@ -234,7 +234,7 @@ fun CreateCompetitionPage(
                 val groupRequests = groups.map { g ->
                     CreateGroupRequest(
                         groupId = 0,
-                        competitionId = remoteId,
+                        competitionId = competitionId,
                         title = g.title,
                         gender = g.gender,
                         minAge = g.minAge,

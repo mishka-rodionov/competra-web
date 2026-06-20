@@ -265,7 +265,7 @@ fun CompetitionsPage(
                         items(publicList) { competition ->
                             PublicCompetitionCard(
                                 competition = competition,
-                                onClick = { competition.remoteId?.let { onCompetitionClick(it.toString()) } },
+                                onClick = { competition.id.takeIf { it.isNotEmpty() }?.let { onCompetitionClick(it) } },
                             )
                         }
                     }

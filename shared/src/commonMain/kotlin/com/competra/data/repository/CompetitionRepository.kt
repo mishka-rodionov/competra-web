@@ -58,7 +58,7 @@ class CompetitionRepository(
         }.body<CommonModel<Unit?>>()
     }
 
-    suspend fun cancelRegistration(competitionId: Long): ApiResult<Unit> = safeApiCallUnit {
+    suspend fun cancelRegistration(competitionId: String): ApiResult<Unit> = safeApiCallUnit {
         authClient.delete("$BASE_URL/event/orienteering/register/$competitionId")
             .body<CommonModel<Unit?>>()
     }

@@ -17,7 +17,7 @@ import io.ktor.client.request.setBody
 
 class GroupRepository(private val authClient: HttpClient) {
 
-    suspend fun getGroups(competitionId: Long): ApiResult<List<ParticipantGroupDetail>> = safeApiCall {
+    suspend fun getGroups(competitionId: String): ApiResult<List<ParticipantGroupDetail>> = safeApiCall {
         authClient.get("$BASE_URL/event/orienteering/participantGroups") {
             parameter("competitionId", competitionId)
         }.body<CommonModel<List<ParticipantGroupDetail>>>()

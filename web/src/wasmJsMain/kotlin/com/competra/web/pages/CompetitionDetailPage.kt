@@ -71,7 +71,7 @@ fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
     if (showRegisterDialog && dialogGroup != null) {
         RegistrationDialog(
             group = dialogGroup!!,
-            competitionId = competitionId.toLongOrNull() ?: 0L,
+            competitionId = competitionId,
             onDismiss = { showRegisterDialog = false },
             onConfirm = { request ->
                 scope.launch {
@@ -132,16 +132,14 @@ fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
                     },
                     onCancelRegistration = {
                         scope.launch {
-                            d.remoteId?.let { id ->
-                                when (repo.cancelRegistration(id)) {
-                                    is ApiResult.Success -> registeredGroupId = null
-                                    is ApiResult.Error -> {}
-                                }
+                            when (repo.cancelRegistration(competitionId)) {
+                                is ApiResult.Success -> registeredGroupId = null
+                                is ApiResult.Error -> {}
                             }
                         }
                     },
                 )
-                2 -> DistancesTab(remoteId = competitionId.toLongOrNull())
+                2 -> DistancesTab(competitionId = competitionId)
                 3 -> ResultsTab(competitionId = competitionId, groups = d.participantGroups)
             }
         }
@@ -320,7 +318,7 @@ private fun GroupCard(
 @Composable
 private fun RegistrationDialog(
     group: ParticipantGroupDetail,
-    competitionId: Long,
+    competitionId: String,
     onDismiss: () -> Unit,
     onConfirm: (RegisterEventRequest) -> Unit,
 ) {

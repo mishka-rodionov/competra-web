@@ -100,7 +100,7 @@ fun ManageCompetitionPage(
             when (selectedTab) {
                 0 -> EditTab(competition)
                 1 -> GroupsTab(competition)
-                2 -> DistancesTab(remoteId = competition.competition.remoteId, showImport = true)
+                2 -> DistancesTab(competitionId = competition.competitionId, showImport = true)
             }
         }
     }
@@ -428,7 +428,7 @@ private fun GroupsTab(competition: OrienteeringCompetition) {
     val groupRepo: GroupRepository = koinInject()
     val distanceRepo: DistanceRepository = koinInject()
     val scope = rememberCoroutineScope()
-    val remoteId = competition.competition.remoteId ?: return
+    val competitionId = competition.competitionId
 
     var groups by remember { mutableStateOf<List<ParticipantGroupDetail>>(emptyList()) }
     var distances by remember { mutableStateOf<List<Distance>>(emptyList()) }
@@ -436,12 +436,12 @@ private fun GroupsTab(competition: OrienteeringCompetition) {
     var error by remember { mutableStateOf<String?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(remoteId) {
-        when (val r = groupRepo.getGroups(remoteId)) {
+    LaunchedEffect(competitionId) {
+        when (val r = groupRepo.getGroups(competitionId)) {
             is ApiResult.Success -> groups = r.data
             is ApiResult.Error -> error = r.message
         }
-        when (val r = distanceRepo.getByCompetition(remoteId)) {
+        when (val r = distanceRepo.getByCompetition(competitionId)) {
             is ApiResult.Success -> distances = r.data
             is ApiResult.Error -> {}
         }
@@ -450,7 +450,7 @@ private fun GroupsTab(competition: OrienteeringCompetition) {
 
     if (showAddDialog) {
         AddGroupDialog(
-            competitionRemoteId = remoteId,
+            competitionRemoteId = competitionId,
             distances = distances,
             onDismiss = { showAddDialog = false },
             onSaved = { updated ->
@@ -546,7 +546,7 @@ private fun GroupCard(group: ParticipantGroupDetail, onDelete: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddGroupDialog(
-    competitionRemoteId: Long,
+    competitionRemoteId: String,
     distances: List<Distance>,
     onDismiss: () -> Unit,
     onSaved: (List<ParticipantGroupDetail>) -> Unit,

@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
-fun DistancesTab(remoteId: Long?, showImport: Boolean = false) {
+fun DistancesTab(competitionId: String?, showImport: Boolean = false) {
     val repo: DistanceRepository = koinInject()
     val scope = rememberCoroutineScope()
 
@@ -50,18 +50,18 @@ fun DistancesTab(remoteId: Long?, showImport: Boolean = false) {
     var error by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(remoteId) {
-        if (remoteId == null) { loading = false; return@LaunchedEffect }
-        when (val r = repo.getByCompetition(remoteId)) {
+    LaunchedEffect(competitionId) {
+        if (competitionId == null) { loading = false; return@LaunchedEffect }
+        when (val r = repo.getByCompetition(competitionId)) {
             is ApiResult.Success -> distances = r.data
             is ApiResult.Error   -> error = r.message
         }
         loading = false
     }
 
-    if (showCreateDialog && remoteId != null) {
+    if (showCreateDialog && competitionId != null) {
         CreateDistanceDialog(
-            remoteId = remoteId,
+            competitionId = competitionId,
             onDismiss = { showCreateDialog = false },
             onSaved = { updated ->
                 distances = updated
@@ -72,7 +72,7 @@ fun DistancesTab(remoteId: Long?, showImport: Boolean = false) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (showImport && remoteId != null) {
+        if (showImport && competitionId != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -95,7 +95,7 @@ fun DistancesTab(remoteId: Long?, showImport: Boolean = false) {
                     scope.launch {
                         importing = true
                         error = null
-                        when (val r = repo.importFromXml(remoteId, bytes)) {
+                        when (val r = repo.importFromXml(competitionId, bytes)) {
                             is ApiResult.Success -> distances = r.data
                             is ApiResult.Error   -> error = r.message
                         }
@@ -131,7 +131,7 @@ fun DistancesTab(remoteId: Long?, showImport: Boolean = false) {
 
 @Composable
 private fun CreateDistanceDialog(
-    remoteId: Long,
+    competitionId: String,
     onDismiss: () -> Unit,
     onSaved: (List<Distance>) -> Unit,
     onError: (String) -> Unit,
@@ -216,7 +216,7 @@ private fun CreateDistanceDialog(
                         .map { ControlPoint(number = it) }
                     val request = SaveDistanceRequest(
                         distanceId = null,
-                        competitionId = remoteId,
+                        competitionId = competitionId,
                         name = name.trim().takeIf { it.isNotEmpty() },
                         lengthMeters = lengthMeters.toIntOrNull() ?: 0,
                         climbMeters = climbMeters.toIntOrNull() ?: 0,

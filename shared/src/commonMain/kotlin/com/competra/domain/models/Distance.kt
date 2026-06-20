@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Distance(
     @SerialName("id")                 val id: Long,
-    @SerialName("competitionId")      val competitionId: Long,
+    @SerialName("competitionId")      val competitionId: String,
     @SerialName("name")               val name: String?,
     @SerialName("lengthMeters")       val lengthMeters: Int,
     @SerialName("climbMeters")        val climbMeters: Int,
@@ -27,7 +27,7 @@ data class ControlPoint(
 @Serializable
 data class SaveDistanceRequest(
     @SerialName("distanceId")          val distanceId: Long?,
-    @SerialName("competitionId")       val competitionId: Long,
+    @SerialName("competitionId")       val competitionId: String,
     @SerialName("name")                val name: String?,
     @SerialName("lengthMeters")        val lengthMeters: Int,
     @SerialName("climbMeters")         val climbMeters: Int,

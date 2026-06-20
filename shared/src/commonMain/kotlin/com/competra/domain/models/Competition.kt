@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Competition(
-    @SerialName("remoteId")        val remoteId: Long? = null,
+    @SerialName("id")              val id: String = "",
+    @SerialName("legacyId")        val legacyId: Long? = null,
     @SerialName("title")           val title: String,
     @SerialName("startDate")       val startDate: Long = 0,
     @SerialName("endDate")         val endDate: Long? = null,
@@ -44,7 +45,8 @@ data class OrienteeringCompetition(
 
 @Serializable
 data class CompetitionDetail(
-    @SerialName("remoteId")            val remoteId: Long? = null,
+    @SerialName("id")                  val id: String = "",
+    @SerialName("legacyId")            val legacyId: Long? = null,
     @SerialName("title")               val title: String = "",
     @SerialName("startDate")           val startDate: Long = 0,
     @SerialName("endDate")             val endDate: Long? = null,
@@ -85,7 +87,7 @@ data class ParticipantGroupDetail(
 
 @Serializable
 data class RegisterEventRequest(
-    @SerialName("competitionId") val competitionId: Long,
+    @SerialName("competitionId") val competitionId: String,
     @SerialName("groupId")       val groupId: Long,
     @SerialName("firstName")     val firstName: String,
     @SerialName("lastName")      val lastName: String,
