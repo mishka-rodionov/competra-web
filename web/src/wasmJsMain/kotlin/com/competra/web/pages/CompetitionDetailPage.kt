@@ -37,9 +37,11 @@ import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
+import com.competra.data.repository.UserRepository
 import com.competra.domain.models.CompetitionDetail
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.domain.models.RegisterEventRequest
+import com.competra.domain.models.UserProfile
 import com.competra.web.utils.toLocaleDateString
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -48,11 +50,13 @@ import org.koin.compose.koinInject
 @Composable
 fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
     val repo: CompetitionRepository = koinInject()
+    val userRepo: UserRepository = koinInject()
     val tokenStorage: TokenStorage = koinInject()
     val isLoggedIn = tokenStorage.isLoggedIn()
     val scope = rememberCoroutineScope()
 
     var detail by remember { mutableStateOf<CompetitionDetail?>(null) }
+    var profile by remember { mutableStateOf<UserProfile?>(null) }
     var loading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var registeredGroupId by remember { mutableStateOf<Long?>(null) }
@@ -65,6 +69,12 @@ fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
             is ApiResult.Success -> detail = r.data
             is ApiResult.Error -> {}
         }
+        if (isLoggedIn) {
+            when (val p = userRepo.getUserProfile()) {
+                is ApiResult.Success -> profile = p.data
+                is ApiResult.Error -> {}
+            }
+        }
         loading = false
     }
 
@@ -72,6 +82,7 @@ fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
         RegistrationDialog(
             group = dialogGroup!!,
             competitionId = competitionId,
+            profile = profile,
             onDismiss = { showRegisterDialog = false },
             onConfirm = { request ->
                 scope.launch {
@@ -319,11 +330,15 @@ private fun GroupCard(
 private fun RegistrationDialog(
     group: ParticipantGroupDetail,
     competitionId: String,
+    profile: UserProfile?,
     onDismiss: () -> Unit,
     onConfirm: (RegisterEventRequest) -> Unit,
 ) {
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
+    // Данные из профиля подставляются автоматически. Поля показываем только как
+    // запасной вариант, если в профиле не заполнены имя или фамилия.
+    val hasProfileName = !profile?.firstName.isNullOrBlank() && !profile?.lastName.isNullOrBlank()
+    var firstName by remember { mutableStateOf(profile?.firstName ?: "") }
+    var lastName by remember { mutableStateOf(profile?.lastName ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -331,20 +346,25 @@ private fun RegistrationDialog(
         title = { Text("Регистрация: ${group.title}") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = lastName,
-                    onValueChange = { lastName = it },
-                    label = { Text("Фамилия") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = firstName,
-                    onValueChange = { firstName = it },
-                    label = { Text("Имя") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
+                if (hasProfileName) {
+                    Text("Регистрация от имени:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${profile!!.lastName} ${profile.firstName}", style = MaterialTheme.typography.bodyLarge)
+                } else {
+                    OutlinedTextField(
+                        value = lastName,
+                        onValueChange = { lastName = it },
+                        label = { Text("Фамилия") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = firstName,
+                        onValueChange = { firstName = it },
+                        label = { Text("Имя") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             }
         },

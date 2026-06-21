@@ -52,6 +52,7 @@ import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
 import com.competra.web.utils.generateUUID
+import com.competra.web.utils.pickXmlFile
 import com.competra.web.utils.utcMillisToZonedDate
 import com.competra.web.utils.zonedDateTimeToUtcMillis
 import kotlinx.coroutines.launch
@@ -72,7 +73,6 @@ private data class PendingDistance(
 /** Локальная группа, ссылается на дистанцию по индексу в списке шага «Дистанции». */
 private data class PendingGroup(
     val title: String,
-    val gender: String?,
     val minAge: Int?,
     val maxAge: Int?,
     val maxParticipants: Int?,
@@ -140,6 +140,8 @@ fun CreateCompetitionPage(
     var groups by remember { mutableStateOf<List<PendingGroup>>(emptyList()) }
     var showDistanceDialog by remember { mutableStateOf(false) }
     var showGroupDialog by remember { mutableStateOf(false) }
+    var importXmlBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var importXmlName by remember { mutableStateOf<String?>(null) }
 
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -153,7 +155,7 @@ fun CreateCompetitionPage(
 
     val nextEnabled = when (step) {
         0 -> title.isNotBlank() && startDateMillis != null && zoneId.isNotBlank()
-        3 -> distances.isNotEmpty()
+        3 -> distances.isNotEmpty() || importXmlBytes != null
         4 -> groups.isNotEmpty()
         else -> true
     }
@@ -230,13 +232,20 @@ fun CreateCompetitionPage(
                 }
             }
 
+            // Импорт дистанций из IOF XML файла (сервер парсит файл сам).
+            importXmlBytes?.let { xmlBytes ->
+                when (val ir = distanceRepo.importFromXml(competitionId, xmlBytes)) {
+                    is ApiResult.Success -> {}
+                    is ApiResult.Error -> { error = "Импорт XML: ${ir.message}"; saving = false; return@launch }
+                }
+            }
+
             if (groups.isNotEmpty()) {
                 val groupRequests = groups.map { g ->
                     CreateGroupRequest(
                         groupId = 0,
                         competitionId = competitionId,
                         title = g.title,
-                        gender = g.gender,
                         minAge = g.minAge,
                         maxAge = g.maxAge,
                         distanceId = savedDistances.getOrNull(g.distanceIndex)?.id,
@@ -317,7 +326,19 @@ fun CreateCompetitionPage(
                     regulationUrl = regulationUrl, onRegulation = { regulationUrl = it },
                     mapUrl = mapUrl, onMap = { mapUrl = it },
                 )
-                3 -> distancesStep(distances = distances, onAdd = { showDistanceDialog = true }, onRemove = { idx -> distances = distances.filterIndexed { i, _ -> i != idx } })
+                3 -> distancesStep(
+                    distances = distances,
+                    importXmlName = importXmlName,
+                    onAdd = { showDistanceDialog = true },
+                    onRemove = { idx -> distances = distances.filterIndexed { i, _ -> i != idx } },
+                    onPickXml = {
+                        pickXmlFile { name, content ->
+                            importXmlName = name
+                            importXmlBytes = content.encodeToByteArray()
+                        }
+                    },
+                    onClearXml = { importXmlName = null; importXmlBytes = null },
+                )
                 4 -> groupsStep(groups = groups, distances = distances, onAdd = { showGroupDialog = true }, onRemove = { idx -> groups = groups.filterIndexed { i, _ -> i != idx } })
             }
 
@@ -516,8 +537,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.organizerStep(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
     distances: List<PendingDistance>,
+    importXmlName: String?,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
+    onPickXml: () -> Unit,
+    onClearXml: () -> Unit,
 ) {
     sectionTitle("Дистанции")
     item {
@@ -526,6 +550,34 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+    item {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Импорт из Mapper (IOF XML)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Выберите готовый XML-файл с дистанциями — он будет импортирован при создании соревнования.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (importXmlName == null) {
+                    OutlinedButton(onClick = onPickXml, modifier = Modifier.fillMaxWidth()) {
+                        Text("Загрузить IOF XML файл")
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Файл: $importXmlName", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        TextButton(onClick = onClearXml) {
+                            Text("Убрать", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
     }
     if (distances.isEmpty()) {
         item { Text("Пока нет дистанций", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -675,14 +727,11 @@ private fun GroupDialog(
     onSave: (PendingGroup) -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf<String?>(null) }
     var minAge by remember { mutableStateOf("") }
     var maxAge by remember { mutableStateOf("") }
     var maxParticipants by remember { mutableStateOf("") }
     var distanceIndex by remember { mutableIntStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
-
-    val genderOptions = listOf<Pair<String?, String>>(null to "Без ограничений", "M" to "Мужчины", "F" to "Женщины")
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
@@ -690,7 +739,6 @@ private fun GroupDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Название * (М21, Ж18, Open)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                LabeledDropdown("Пол", gender, genderOptions, Modifier.fillMaxWidth()) { gender = it }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = minAge, onValueChange = { minAge = it.filter { c -> c.isDigit() } },
@@ -728,7 +776,6 @@ private fun GroupDialog(
                     onSave(
                         PendingGroup(
                             title = title.trim(),
-                            gender = gender,
                             minAge = minAge.toIntOrNull(),
                             maxAge = maxAge.toIntOrNull(),
                             maxParticipants = maxParticipants.toIntOrNull(),
