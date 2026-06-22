@@ -21,6 +21,9 @@ sealed class ApiResult<out T> {
     data class Error(val message: String, val code: Int = 0) : ApiResult<Nothing>()
 }
 
+/** HTTP-код для ответа 401 — по нему UI понимает, что нужно перелогиниться. */
+const val HTTP_UNAUTHORIZED = 401
+
 suspend fun <T> safeApiCall(call: suspend () -> CommonModel<T>): ApiResult<T> =
     try {
         val response = call()
@@ -28,6 +31,8 @@ suspend fun <T> safeApiCall(call: suspend () -> CommonModel<T>): ApiResult<T> =
             ApiResult.Success(response.result)
         else
             ApiResult.Error(response.errors?.firstOrNull()?.message ?: "Unknown error")
+    } catch (e: UnauthorizedException) {
+        ApiResult.Error(e.message ?: "Сессия истекла", code = HTTP_UNAUTHORIZED)
     } catch (e: Exception) {
         ApiResult.Error(e.message ?: "Network error")
     }
@@ -38,6 +43,8 @@ suspend fun safeApiCallUnit(call: suspend () -> CommonModel<Unit?>): ApiResult<U
         val response = call()
         if (response.status == 1) ApiResult.Success(Unit)
         else ApiResult.Error(response.errors?.firstOrNull()?.message ?: "Unknown error")
+    } catch (e: UnauthorizedException) {
+        ApiResult.Error(e.message ?: "Сессия истекла", code = HTTP_UNAUTHORIZED)
     } catch (e: Exception) {
         ApiResult.Error(e.message ?: "Network error")
     }

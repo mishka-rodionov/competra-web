@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
+import com.competra.data.api.HTTP_UNAUTHORIZED
 import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
 import com.competra.domain.models.OrienteeringCompetition
@@ -58,7 +59,9 @@ fun ManagementPage(
         if (!isLoggedIn) { loading = false; return@LaunchedEffect }
         when (val r = repo.getMyCompetitions()) {
             is ApiResult.Success -> competitions = r.data.sortedByDescending { it.competition.startDate }
-            is ApiResult.Error -> error = r.message
+            is ApiResult.Error ->
+                // 401: токен уже сброшен в auth-клиенте — отправляем пользователя на вход.
+                if (r.code == HTTP_UNAUTHORIZED) showLogin = true else error = r.message
         }
         loading = false
     }
