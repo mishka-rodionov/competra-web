@@ -221,7 +221,7 @@ private fun CreateDistanceDialog(
                         lengthMeters = lengthMeters.toIntOrNull() ?: 0,
                         climbMeters = climbMeters.toIntOrNull() ?: 0,
                         controlsCount = controlPoints.size,
-                        description = description.trim().takeIf { it.isNotEmpty() },
+                        description = description.trim(),
                         controlPoints = controlPoints,
                         finishControlPoint = finishCp.toIntOrNull(),
                     )

@@ -32,7 +32,7 @@ data class SaveDistanceRequest(
     @SerialName("lengthMeters")        val lengthMeters: Int,
     @SerialName("climbMeters")         val climbMeters: Int,
     @SerialName("controlsCount")       val controlsCount: Int,
-    @SerialName("description")         val description: String?,
+    @SerialName("description")         val description: String = "",
     @SerialName("controlPoints")       val controlPoints: List<ControlPoint> = emptyList(),
     @SerialName("finishControlPoint")  val finishControlPoint: Int? = null,
 )

@@ -4,15 +4,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -221,7 +228,7 @@ fun CreateCompetitionPage(
                         lengthMeters = d.lengthMeters,
                         climbMeters = d.climbMeters,
                         controlsCount = d.controlPoints.size,
-                        description = d.description,
+                        description = d.description ?: "",
                         controlPoints = d.controlPoints,
                         finishControlPoint = d.finishControlPoint,
                     )
@@ -266,7 +273,11 @@ fun CreateCompetitionPage(
         topBar = {
             TopAppBar(
                 title = { Text("Создать · ${stepTitles[step]} (${step + 1}/5)") },
-                navigationIcon = { TextButton(onClick = { goBack() }) { Text("← Назад") } },
+                navigationIcon = {
+                    IconButton(onClick = { goBack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    }
+                },
             )
         },
         bottomBar = {
@@ -275,7 +286,15 @@ fun CreateCompetitionPage(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    OutlinedButton(onClick = { goBack() }) { Text("Назад") }
+                    OutlinedButton(onClick = { goBack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Назад")
+                    }
                     Button(
                         enabled = nextEnabled,
                         onClick = { if (step < 4) { error = null; step++ } else publish() },
