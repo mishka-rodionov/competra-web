@@ -63,6 +63,11 @@ class CompetitionRepository(
             .body<CommonModel<Unit?>>()
     }
 
+    suspend fun deleteCompetition(competitionId: String): ApiResult<Unit> = safeApiCallUnit {
+        authClient.delete("$BASE_URL/event/orienteering/competitions/$competitionId")
+            .body<CommonModel<Unit?>>()
+    }
+
     suspend fun createCompetition(request: CreateCompetitionRequest): ApiResult<OrienteeringCompetition> = safeApiCall {
         authClient.post("$BASE_URL/event/orienteering/save/competitions") {
             setBody(request)

@@ -12,20 +12,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +43,7 @@ import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.web.utils.toLocaleDateString
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,12 +56,18 @@ fun ManagementPage(
 ) {
     val tokenStorage: TokenStorage = koinInject()
     val repo: CompetitionRepository = koinInject()
+    val scope = rememberCoroutineScope()
     val isLoggedIn = tokenStorage.isLoggedIn()
 
     var competitions by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var showLogin by remember { mutableStateOf(false) }
+
+    // Соревнование, для которого открыт диалог подтверждения удаления (null — диалог скрыт).
+    var deletingCompetition by remember { mutableStateOf<OrienteeringCompetition?>(null) }
+    var deleting by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) { loading = false; return@LaunchedEffect }
@@ -150,9 +164,57 @@ fun ManagementPage(
                 ManagedCompetitionCard(
                     competition = comp,
                     onManage = { onManageClick(comp) },
+                    onDelete = { deleteError = null; deletingCompetition = comp },
                 )
             }
         }
+    }
+
+    deletingCompetition?.let { target ->
+        AlertDialog(
+            onDismissRequest = { if (!deleting) deletingCompetition = null },
+            title = { Text("Удалить соревнование?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("«${target.competition.title}» будет удалено безвозвратно.")
+                    deleteError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = !deleting,
+                    onClick = {
+                        deleting = true
+                        deleteError = null
+                        scope.launch {
+                            when (val r = repo.deleteCompetition(target.competitionId)) {
+                                is ApiResult.Success -> {
+                                    competitions = competitions.filter { it.competitionId != target.competitionId }
+                                    deletingCompetition = null
+                                }
+                                is ApiResult.Error ->
+                                    if (r.code == HTTP_UNAUTHORIZED) {
+                                        deletingCompetition = null
+                                        showLogin = true
+                                    } else {
+                                        deleteError = r.message
+                                    }
+                            }
+                            deleting = false
+                        }
+                    },
+                ) {
+                    Text(if (deleting) "Удаление…" else "Удалить")
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !deleting, onClick = { deletingCompetition = null }) {
+                    Text("Отмена")
+                }
+            },
+        )
     }
 }
 
@@ -160,6 +222,7 @@ fun ManagementPage(
 private fun ManagedCompetitionCard(
     competition: OrienteeringCompetition,
     onManage: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val c = competition.competition
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -185,11 +248,21 @@ private fun ManagedCompetitionCard(
             c.address?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            OutlinedButton(
-                onClick = onManage,
-                modifier = Modifier.padding(top = 8.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Управлять")
+                OutlinedButton(onClick = onManage) {
+                    Text("Управлять")
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Удалить соревнование",
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }
