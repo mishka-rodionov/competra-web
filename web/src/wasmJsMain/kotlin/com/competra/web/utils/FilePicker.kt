@@ -20,3 +20,7 @@ private external fun jsPickFile(accept: String, onPicked: (String, String) -> Un
 /** Выбор IOF XML файла. Колбэк получает имя файла и его содержимое. */
 fun pickXmlFile(onPicked: (fileName: String, content: String) -> Unit) =
     jsPickFile(".xml", onPicked)
+
+/** Выбор HTML файла (протокол результатов). Колбэк получает имя файла и его содержимое. */
+fun pickHtmlFile(onPicked: (fileName: String, content: String) -> Unit) =
+    jsPickFile(".html", onPicked)

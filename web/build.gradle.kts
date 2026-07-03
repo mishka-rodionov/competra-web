@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -30,6 +31,7 @@ kotlin {
                 implementation(compose.components.resources)
                 implementation(libs.koin.compose)
                 implementation(libs.ktor.client.core)
+                implementation(libs.kotlinx.serialization)
             }
         }
     }

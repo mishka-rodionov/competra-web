@@ -40,4 +40,32 @@ data class OrienteeringResult(
     @SerialName("rank")          val rank: Int? = null,
     @SerialName("status")        val status: String = "FINISHED",
     @SerialName("penaltyTime")   val penaltyTime: Long = 0,
+    @SerialName("splits")        val splits: List<SplitTime>? = null,
+    @SerialName("isEditable")    val isEditable: Boolean = true,
+    @SerialName("isEdited")      val isEdited: Boolean = false,
+)
+
+@Serializable
+data class SplitTime(
+    @SerialName("controlPoint") val controlPoint: Int,
+    @SerialName("timestamp")    val timestamp: Long,
+)
+
+/** Запрос на сохранение/обновление результата — форма 1:1 с бэкендовым OrienteeringResultRequest. */
+@Serializable
+data class SaveResultRequest(
+    @SerialName("id")              val id: String,
+    @SerialName("competitionId")   val competitionId: String,
+    @SerialName("groupId")         val groupId: Long,
+    @SerialName("participantId")   val participantId: String,
+    @SerialName("startTime")       val startTime: Long?,
+    @SerialName("finishTime")      val finishTime: Long?,
+    @SerialName("totalTime")       val totalTime: Long?,
+    @SerialName("rank")            val rank: Int?,
+    @SerialName("status")          val status: String,
+    @SerialName("penaltyTime")     val penaltyTime: Long,
+    @SerialName("splits")          val splits: List<SplitTime>?,
+    @SerialName("isEditable")      val isEditable: Boolean,
+    @SerialName("isEdited")        val isEdited: Boolean,
+    @SerialName("serverUpdatedAt") val serverUpdatedAt: Long? = null,
 )

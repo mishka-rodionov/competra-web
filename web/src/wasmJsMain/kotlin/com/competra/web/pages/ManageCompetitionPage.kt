@@ -47,17 +47,25 @@ import com.competra.data.api.ApiResult
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
+import com.competra.data.repository.ResultRepository
 import com.competra.domain.models.CompetitionFields
 import com.competra.domain.models.CreateCompetitionRequest
 import com.competra.domain.models.CreateGroupRequest
 import com.competra.domain.models.Distance
 import com.competra.domain.models.OrienteeringCompetition
+import com.competra.domain.models.OrienteeringParticipant
+import com.competra.domain.models.OrienteeringResult
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.web.components.DateField
+import com.competra.web.components.ImportResultsPreviewDialog
 import com.competra.web.components.LabeledDropdown
 import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
+import com.competra.web.utils.ImportResultsDiff
+import com.competra.web.utils.buildResultsDiff
+import com.competra.web.utils.parseResultsHtml
+import com.competra.web.utils.pickHtmlFile
 import com.competra.web.utils.utcMillisToZonedDate
 import com.competra.web.utils.utcMillisToZonedTime
 import com.competra.web.utils.zonedDateTimeToUtcMillis
@@ -102,11 +110,16 @@ fun ManageCompetitionPage(
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Общее") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Группы") })
                 Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Дистанции") })
+                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Результаты") })
             }
             when (selectedTab) {
                 0 -> EditTab(competition)
                 1 -> GroupsTab(competition)
                 2 -> DistancesTab(competitionId = competition.competitionId, showImport = true)
+                3 -> ResultsManageTab(
+                    competitionId = competition.competitionId,
+                    competitionTitle = competition.competition.title,
+                )
             }
         }
     }
@@ -705,6 +718,102 @@ private fun AddGroupDialog(
             TextButton(onClick = onDismiss) { Text("Отмена") }
         },
     )
+}
+
+@Composable
+private fun ResultsManageTab(competitionId: String, competitionTitle: String) {
+    val repo: ResultRepository = koinInject()
+    val scope = rememberCoroutineScope()
+
+    var results by remember { mutableStateOf<List<OrienteeringResult>>(emptyList()) }
+    var participants by remember { mutableStateOf<List<OrienteeringParticipant>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var importing by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var previewDiff by remember { mutableStateOf<ImportResultsDiff?>(null) }
+
+    LaunchedEffect(competitionId) {
+        when (val r = repo.getResults(competitionId)) {
+            is ApiResult.Success -> results = r.data
+            is ApiResult.Error -> error = r.message
+        }
+        when (val r = repo.getParticipants(competitionId)) {
+            is ApiResult.Success -> participants = r.data
+            is ApiResult.Error -> {}
+        }
+        loading = false
+    }
+
+    previewDiff?.let { diff ->
+        ImportResultsPreviewDialog(
+            competitionTitle = competitionTitle,
+            changed = diff.changed,
+            unmatched = diff.unmatched,
+            onDismiss = { previewDiff = null },
+            onConfirm = { selectedRows ->
+                scope.launch {
+                    importing = true
+                    error = null
+                    when (val r = repo.saveResults(selectedRows.map { it.request })) {
+                        is ApiResult.Success -> {
+                            val savedIds = r.data.map { it.participantId }.toSet()
+                            results = results.filter { it.participantId !in savedIds } + r.data
+                        }
+                        is ApiResult.Error -> error = r.message
+                    }
+                    importing = false
+                    previewDiff = null
+                }
+            },
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Результаты", style = MaterialTheme.typography.titleSmall)
+            Button(
+                enabled = !loading && !importing,
+                onClick = {
+                    pickHtmlFile { _, content ->
+                        error = null
+                        val parsedRows = runCatching { parseResultsHtml(content) }.getOrNull()
+                        if (parsedRows.isNullOrEmpty()) {
+                            error = "Не удалось распознать файл — проверьте, что это HTML-протокол результатов."
+                            return@pickHtmlFile
+                        }
+                        previewDiff = buildResultsDiff(parsedRows, participants, results, competitionId)
+                    }
+                },
+            ) {
+                Text("Импорт из HTML")
+            }
+        }
+
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
+
+        if (loading || importing) {
+            CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+        } else if (results.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "Результаты ещё не опубликованы. Их можно восстановить из ранее экспортированного HTML.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            val finished = results.count { it.status == "FINISHED" }
+            Text(
+                "Всего результатов: ${results.size} (финишировали: $finished)",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
+    }
 }
 
 private fun String.trimOrNull(): String? = trim().takeIf { it.isNotEmpty() }

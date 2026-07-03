@@ -20,7 +20,7 @@ val appModule = module {
     single { AuthRepository(get(named("auth")), get()) }
     single { CompetitionRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
     single { DistanceRepository(get(named("auth"))) }
-    single { ResultRepository(publicClient = get(named("public"))) }
+    single { ResultRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
     single { UserRepository(authClient = get(named("auth"))) }
     single { GroupRepository(authClient = get(named("auth"))) }
 }
