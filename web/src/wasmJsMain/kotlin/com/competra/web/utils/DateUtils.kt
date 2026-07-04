@@ -9,6 +9,12 @@ private external fun jsToInputDate(ms: Double): String
 @JsFun("() => crypto.randomUUID()")
 external fun generateUUID(): String
 
+@JsFun("() => Date.now()")
+private external fun jsNowMillis(): Double
+
+/** Текущее время в миллисекундах (Unix epoch, UTC). */
+fun nowMillis(): Long = jsNowMillis().toLong()
+
 // --- Часовые пояса и время через браузерный Intl (java.time на wasmJs недоступен) ---
 
 @JsFun(

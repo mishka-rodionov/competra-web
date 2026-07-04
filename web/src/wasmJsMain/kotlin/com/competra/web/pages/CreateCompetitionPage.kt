@@ -59,6 +59,8 @@ import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
 import com.competra.web.utils.generateUUID
+import com.competra.web.utils.isDebugEnvironment
+import com.competra.web.utils.nowMillis
 import com.competra.web.utils.pickXmlFile
 import com.competra.web.utils.utcMillisToZonedDate
 import com.competra.web.utils.zonedDateTimeToUtcMillis
@@ -142,6 +144,9 @@ fun CreateCompetitionPage(
     var regulationUrl by remember { mutableStateOf("") }
     var mapUrl by remember { mutableStateOf("") }
 
+    // Debug: тестовое соревнование (скрыто из публичной ленты на сервере).
+    var isTest by remember { mutableStateOf(false) }
+
     // --- Шаг 4/5: Дистанции и группы ---
     var distances by remember { mutableStateOf<List<PendingDistance>>(emptyList()) }
     var groups by remember { mutableStateOf<List<PendingGroup>>(emptyList()) }
@@ -199,6 +204,7 @@ fun CreateCompetitionPage(
                     regulationUrl = regulationUrl.trimOrNull(),
                     mapUrl = mapUrl.trimOrNull(),
                     timeZoneId = zoneId,
+                    isTest = isTest,
                 ),
                 direction = direction,
                 punchingSystem = punchingSystem,
@@ -269,6 +275,28 @@ fun CreateCompetitionPage(
         }
     }
 
+    // Debug: подставляет в форму преднабор тестовых данных и включает флаг «тестовое».
+    fun fillTestData() {
+        title = "[ТЕСТ] Соревнование ${nowMillis() % 100000}"
+        startDateMillis = nowMillis() + 7 * DAY_MS
+        startTime = "11:00"
+        address = "Москва, Лосиный Остров"
+        description = "Тестовое соревнование для отладки. Создано автозаполнением."
+        direction = "FORWARD"
+        punchingSystem = "SPORTIDENT"
+        startTimeMode = "STRICT"
+        startInterval = 60
+        registrationOpenImmediately = true
+        registrationEndMode = "AT_COMPETITION_START"
+        maxParticipants = "100"
+        feeAmount = "500"
+        contactPhone = "+79990000000"
+        contactEmail = "test@example.com"
+        website = "https://example.com"
+        regulationUrl = "https://example.com/regulation"
+        isTest = true
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -316,6 +344,15 @@ fun CreateCompetitionPage(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (step == 0 && isDebugEnvironment()) {
+                item {
+                    DebugTestToolsCard(
+                        isTest = isTest,
+                        onIsTest = { isTest = it },
+                        onFill = { fillTestData() },
+                    )
+                }
+            }
             when (step) {
                 0 -> basicStep(
                     title = title, onTitle = { title = it },
@@ -379,6 +416,60 @@ fun CreateCompetitionPage(
             onDismiss = { showGroupDialog = false },
             onSave = { groups = groups + it; showGroupDialog = false },
         )
+    }
+}
+
+/**
+ * Debug-карточка инструментов разработчика на шаге «Основное».
+ *
+ * Отрисовывается только в debug-окружении (см. [isDebugEnvironment]). Содержит
+ * переключатель «Тестовое соревнование» (флаг скрывает соревнование из публичной
+ * ленты на сервере) и кнопку быстрого заполнения формы тестовыми данными.
+ */
+@Composable
+private fun DebugTestToolsCard(
+    isTest: Boolean,
+    onIsTest: (Boolean) -> Unit,
+    onFill: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Text(
+                "DEBUG · инструменты отладки",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            Spacer(Modifier.size(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Тестовое соревнование",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        "Скрыто из публичной ленты, видно только вам",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+                Switch(checked = isTest, onCheckedChange = onIsTest)
+            }
+            Spacer(Modifier.size(8.dp))
+            Button(onClick = onFill, modifier = Modifier.fillMaxWidth()) {
+                Text("Заполнить тестовыми данными")
+            }
+        }
     }
 }
 

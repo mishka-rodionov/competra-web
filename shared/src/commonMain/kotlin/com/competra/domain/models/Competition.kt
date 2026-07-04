@@ -28,6 +28,8 @@ data class Competition(
     @SerialName("regulationUrl")   val regulationUrl: String? = null,
     @SerialName("mapUrl")          val mapUrl: String? = null,
     @SerialName("resultsStatus")   val resultsStatus: String = "NOT_PUBLISHED",
+    /** Тестовое соревнование: видно только владельцу, исключено из публичной ленты. */
+    @SerialName("isTest")          val isTest: Boolean = false,
 )
 
 @Serializable
@@ -67,6 +69,8 @@ data class CompetitionDetail(
     @SerialName("mainOrganizerId")     val mainOrganizerId: String? = null,
     @SerialName("participantGroups")   val participantGroups: List<ParticipantGroupDetail> = emptyList(),
     @SerialName("isUserRegistered")    val isUserRegistered: Boolean = false,
+    /** Тестовое соревнование: видно только владельцу, исключено из публичной ленты. */
+    @SerialName("isTest")              val isTest: Boolean = false,
 )
 
 @Serializable
@@ -116,6 +120,8 @@ data class CompetitionFields(
     @SerialName("imageUrl")           val imageUrl: String? = null,
     @SerialName("resultsStatus")      val resultsStatus: String = "NOT_PUBLISHED",
     @SerialName("timeZoneId")         val timeZoneId: String = "Europe/Moscow",
+    /** Тестовое соревнование: создаётся из debug-сборки, не попадает в публичную ленту. */
+    @SerialName("isTest")             val isTest: Boolean = false,
 )
 
 @Serializable
