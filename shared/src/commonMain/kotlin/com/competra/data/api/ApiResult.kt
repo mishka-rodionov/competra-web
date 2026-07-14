@@ -16,6 +16,13 @@ data class ApiError(
     @SerialName("message") val message: String,
 )
 
+/** Страница списка с бэкенда: элементы + признак наличия следующей страницы. */
+@Serializable
+data class PagedResponse<T>(
+    @SerialName("items")   val items: List<T>,
+    @SerialName("hasMore") val hasMore: Boolean,
+)
+
 sealed class ApiResult<out T> {
     data class Success<T>(val data: T) : ApiResult<T>()
     data class Error(val message: String, val code: Int = 0) : ApiResult<Nothing>()

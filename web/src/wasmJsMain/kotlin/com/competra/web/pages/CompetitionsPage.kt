@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -29,6 +30,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +48,8 @@ import com.competra.domain.models.OrienteeringCompetition
 import com.competra.web.utils.toLocaleDateString
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+
+private const val PUBLIC_PAGE_SIZE = 20
 
 private data class EventsFilter(
     val kindOfSports: Set<String> = emptySet(),
@@ -87,23 +91,76 @@ fun CompetitionsPage(
     var showFilter by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    fun loadPublic(f: EventsFilter) {
-        scope.launch {
-            loading = true
-            error = null
-            when (val r = repo.getPublicCompetitions(
-                kindOfSports = f.kindOfSports.toList(),
-                statuses = f.statuses.toList(),
-            )) {
-                is ApiResult.Success -> publicList = r.data
-                is ApiResult.Error -> error = r.message
+    // Пагинация публичного списка: page — следующая страница для догрузки,
+    // hasMore/isLoadingMore/appendError отражают состояние именно догрузки (не первой загрузки).
+    var page by remember { mutableIntStateOf(0) }
+    var hasMore by remember { mutableStateOf(true) }
+    var isLoadingMore by remember { mutableStateOf(false) }
+    var appendError by remember { mutableStateOf<String?>(null) }
+    val publicListState = rememberLazyListState()
+
+    fun loadPublic(f: EventsFilter, reset: Boolean) {
+        if (reset) {
+            scope.launch {
+                loading = true
+                error = null
+                page = 0
+                hasMore = true
+                when (val r = repo.getPublicCompetitions(
+                    kindOfSports = f.kindOfSports.toList(),
+                    statuses = f.statuses.toList(),
+                    page = 0,
+                    limit = PUBLIC_PAGE_SIZE,
+                )) {
+                    is ApiResult.Success -> {
+                        publicList = r.data.items
+                        hasMore = r.data.hasMore
+                        page = 1
+                    }
+                    is ApiResult.Error -> error = r.message
+                }
+                loading = false
             }
-            loading = false
+        } else {
+            if (isLoadingMore || !hasMore) return
+            scope.launch {
+                isLoadingMore = true
+                appendError = null
+                when (val r = repo.getPublicCompetitions(
+                    kindOfSports = f.kindOfSports.toList(),
+                    statuses = f.statuses.toList(),
+                    page = page,
+                    limit = PUBLIC_PAGE_SIZE,
+                )) {
+                    is ApiResult.Success -> {
+                        publicList = publicList + r.data.items
+                        hasMore = r.data.hasMore
+                        page += 1
+                    }
+                    is ApiResult.Error -> appendError = r.message
+                }
+                isLoadingMore = false
+            }
+        }
+    }
+
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val layoutInfo = publicListState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            totalItems > 0 && lastVisible >= totalItems - 3
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore, hasMore, isLoadingMore, loading, selectedTab, filter) {
+        if (selectedTab == 0 && shouldLoadMore && hasMore && !isLoadingMore && !loading) {
+            loadPublic(filter, reset = false)
         }
     }
 
     LaunchedEffect(Unit) {
-        loadPublic(filter)
+        loadPublic(filter, reset = true)
         if (isLoggedIn) {
             when (val r = repo.getMyCompetitions()) {
                 is ApiResult.Success -> myList = r.data
@@ -186,7 +243,7 @@ fun CompetitionsPage(
                             draftFilter = EventsFilter()
                             filter = EventsFilter()
                             showFilter = false
-                            loadPublic(EventsFilter())
+                            loadPublic(EventsFilter(), reset = true)
                         },
                         modifier = Modifier.weight(1f),
                     ) {
@@ -196,7 +253,7 @@ fun CompetitionsPage(
                         onClick = {
                             filter = draftFilter
                             showFilter = false
-                            loadPublic(draftFilter)
+                            loadPublic(draftFilter, reset = true)
                         },
                         modifier = Modifier.weight(1f),
                     ) {
@@ -259,14 +316,40 @@ fun CompetitionsPage(
                     }
                 } else {
                     LazyColumn(
+                        state = publicListState,
                         modifier = Modifier.fillMaxSize().padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(publicList) { competition ->
+                        items(publicList, key = { it.id }) { competition ->
                             PublicCompetitionCard(
                                 competition = competition,
                                 onClick = { competition.id.takeIf { it.isNotEmpty() }?.let { onCompetitionClick(it) } },
                             )
+                        }
+                        item {
+                            when {
+                                isLoadingMore -> Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                                appendError != null -> Row(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        appendError ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    TextButton(onClick = { loadPublic(filter, reset = false) }) {
+                                        Text("Повторить")
+                                    }
+                                }
+                            }
                         }
                     }
                 }

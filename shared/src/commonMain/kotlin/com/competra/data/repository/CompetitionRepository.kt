@@ -3,6 +3,7 @@ package com.competra.data.repository
 import com.competra.data.api.ApiResult
 import com.competra.data.api.BASE_URL
 import com.competra.data.api.CommonModel
+import com.competra.data.api.PagedResponse
 import com.competra.data.api.safeApiCall
 import com.competra.data.api.safeApiCallUnit
 import com.competra.domain.models.Competition
@@ -27,13 +28,17 @@ class CompetitionRepository(
         statuses: List<String> = emptyList(),
         dateFrom: Long? = null,
         dateTo: Long? = null,
-    ): ApiResult<List<Competition>> = safeApiCall {
+        page: Int = 0,
+        limit: Int = 20,
+    ): ApiResult<PagedResponse<Competition>> = safeApiCall {
         publicClient.get("$BASE_URL/event/orienteering/competitions/public") {
             kindOfSports.forEach { parameter("kind_of_sports", it) }
             statuses.forEach { parameter("statuses", it) }
             dateFrom?.let { parameter("date_from", it) }
             dateTo?.let { parameter("date_to", it) }
-        }.body<CommonModel<List<Competition>>>()
+            parameter("page", page)
+            parameter("limit", limit)
+        }.body<CommonModel<PagedResponse<Competition>>>()
     }
 
     suspend fun getCompetitionDetail(id: String, userId: String? = null): ApiResult<CompetitionDetail> = safeApiCall {
