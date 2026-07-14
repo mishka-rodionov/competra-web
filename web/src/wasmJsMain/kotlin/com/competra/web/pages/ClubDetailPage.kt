@@ -44,12 +44,14 @@ import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.ClubRepository
+import com.competra.data.repository.RatingRepository
 import com.competra.data.repository.TeamRepository
 import com.competra.data.repository.UserRepository
 import com.competra.domain.models.ChangeRoleRequest
 import com.competra.domain.models.Club
 import com.competra.domain.models.ClubMember
 import com.competra.domain.models.CreateTeamRequest
+import com.competra.domain.models.Rating
 import com.competra.domain.models.Team
 import com.competra.domain.models.UpdateClubRequest
 import com.competra.web.components.LabeledDropdown
@@ -71,10 +73,13 @@ fun ClubDetailPage(
     onLoginSuccess: () -> Unit,
     onJoinRequestsClick: (String) -> Unit,
     onTeamClick: (String) -> Unit,
+    onRatingClick: (String) -> Unit,
+    onCreateRatingClick: (String) -> Unit,
 ) {
     val clubRepo: ClubRepository = koinInject()
     val teamRepo: TeamRepository = koinInject()
     val userRepo: UserRepository = koinInject()
+    val ratingRepo: RatingRepository = koinInject()
     val tokenStorage: TokenStorage = koinInject()
     val isLoggedIn = tokenStorage.isLoggedIn()
     val scope = rememberCoroutineScope()
@@ -83,6 +88,7 @@ fun ClubDetailPage(
     var club by remember { mutableStateOf<Club?>(null) }
     var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
     var teams by remember { mutableStateOf<List<Team>>(emptyList()) }
+    var ratings by remember { mutableStateOf<List<Rating>>(emptyList()) }
     var currentUserId by remember { mutableStateOf<String?>(null) }
     var myPendingRequest by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
@@ -105,6 +111,10 @@ fun ClubDetailPage(
         }
         when (val r = teamRepo.getTeamsByClub(clubId)) {
             is ApiResult.Success -> teams = r.data
+            is ApiResult.Error -> {}
+        }
+        when (val r = ratingRepo.getRatingsForClub(clubId)) {
+            is ApiResult.Success -> ratings = r.data
             is ApiResult.Error -> {}
         }
         if (isLoggedIn) {
@@ -257,6 +267,7 @@ fun ClubDetailPage(
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Участники") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Команды") })
+                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Рейтинги") })
             }
 
             when (selectedTab) {
@@ -286,6 +297,12 @@ fun ClubDetailPage(
                     isAdmin = isAdmin,
                     onTeamClick = onTeamClick,
                     onAddTeam = { showCreateTeamDialog = true },
+                )
+                2 -> RatingsTab(
+                    ratings = ratings,
+                    isAdmin = isAdmin,
+                    onRatingClick = onRatingClick,
+                    onCreateRating = { onCreateRatingClick(clubId) },
                 )
             }
         }
@@ -382,6 +399,48 @@ private fun TeamsTab(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             TextButton(onClick = { onTeamClick(team.id) }, modifier = Modifier.padding(top = 4.dp)) {
+                                Text("Открыть")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RatingsTab(
+    ratings: List<Rating>,
+    isAdmin: Boolean,
+    onRatingClick: (String) -> Unit,
+    onCreateRating: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (isAdmin) {
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                OutlinedButton(onClick = onCreateRating) { Text("+ Создать рейтинг") }
+            }
+        }
+        if (ratings.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("Рейтингов пока нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(ratings, key = { it.id }) { rating ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Text(rating.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Групп: ${rating.groups.size}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(onClick = { onRatingClick(rating.id) }, modifier = Modifier.padding(top = 4.dp)) {
                                 Text("Открыть")
                             }
                         }

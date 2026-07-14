@@ -19,7 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.domain.models.OrienteeringCompetition
+import com.competra.domain.models.Rating
+import com.competra.domain.models.RatingGroup
+import com.competra.domain.models.RatingGroupMappingSuggestion
 import com.competra.web.pages.AboutPage
+import com.competra.web.pages.AddCompetitionToRatingPage
 import com.competra.web.pages.ClubDetailPage
 import com.competra.web.pages.ClubJoinRequestsPage
 import com.competra.web.pages.ClubsListPage
@@ -27,6 +31,7 @@ import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
 import com.competra.web.pages.CreateClubPage
 import com.competra.web.pages.CreateCompetitionPage
+import com.competra.web.pages.GroupMappingPage
 import com.competra.web.pages.GroupSplitsTablePage
 import com.competra.web.pages.ManageCompetitionPage
 import com.competra.web.pages.ManagementPage
@@ -35,6 +40,9 @@ import com.competra.web.pages.ParticipantSplitsPage
 import com.competra.web.pages.ProfileEditorPage
 import com.competra.web.pages.ProfilePage
 import com.competra.web.pages.RaceGraphPage
+import com.competra.web.pages.RatingDetailPage
+import com.competra.web.pages.RatingFormPage
+import com.competra.web.pages.RatingsSearchPage
 import com.competra.web.pages.TeamDetailPage
 import com.competra.web.theme.CompetiraTheme
 
@@ -56,6 +64,20 @@ sealed class Page {
     data class ClubJoinRequests(val clubId: String) : Page()
     data object MyJoinRequests : Page()
     data class TeamDetail(val teamId: String, val clubId: String) : Page()
+    data object RatingsSearch : Page()
+    data class RatingDetail(val ratingId: String) : Page()
+    data class RatingForm(val clubId: String, val rating: Rating? = null) : Page()
+    data class AddCompetitionToRating(
+        val ratingId: String,
+        val alreadyAddedCompetitionIds: Set<String>,
+        val ratingGroups: List<RatingGroup>,
+    ) : Page()
+    data class GroupMapping(
+        val ratingId: String,
+        val competitionId: String,
+        val ratingGroups: List<RatingGroup>,
+        val suggestions: List<RatingGroupMappingSuggestion>? = null,
+    ) : Page()
 }
 
 @Composable
@@ -120,6 +142,48 @@ fun App() {
                 onLoginSuccess = { page = Page.ClubDetail(current.clubId) },
                 onJoinRequestsClick = { clubId -> page = Page.ClubJoinRequests(clubId) },
                 onTeamClick = { teamId -> page = Page.TeamDetail(teamId, current.clubId) },
+                onRatingClick = { ratingId -> page = Page.RatingDetail(ratingId) },
+                onCreateRatingClick = { clubId -> page = Page.RatingForm(clubId) },
+            )
+            is Page.RatingsSearch -> RatingsSearchPage(
+                onBack = { page = Page.Clubs },
+                onRatingClick = { ratingId -> page = Page.RatingDetail(ratingId) },
+            )
+            is Page.RatingDetail -> RatingDetailPage(
+                ratingId = current.ratingId,
+                onBack = { page = Page.Clubs },
+                onAddCompetitionClick = { ratingId, alreadyAddedIds, ratingGroups ->
+                    page = Page.AddCompetitionToRating(ratingId, alreadyAddedIds, ratingGroups)
+                },
+                onEditClick = { clubId, rating -> page = Page.RatingForm(clubId, rating) },
+                onMappingClick = { ratingId, competitionId, ratingGroups ->
+                    page = Page.GroupMapping(ratingId, competitionId, ratingGroups)
+                },
+            )
+            is Page.RatingForm -> RatingFormPage(
+                clubId = current.clubId,
+                existingRating = current.rating,
+                onBack = {
+                    page = current.rating?.let { Page.RatingDetail(it.id) } ?: Page.ClubDetail(current.clubId)
+                },
+                onSaved = { rating -> page = Page.RatingDetail(rating.id) },
+                onLoginSuccess = { page = Page.RatingForm(current.clubId, current.rating) },
+            )
+            is Page.AddCompetitionToRating -> AddCompetitionToRatingPage(
+                ratingId = current.ratingId,
+                alreadyAddedCompetitionIds = current.alreadyAddedCompetitionIds,
+                onBack = { page = Page.RatingDetail(current.ratingId) },
+                onAdded = { competitionId, suggestions ->
+                    page = Page.GroupMapping(current.ratingId, competitionId, current.ratingGroups, suggestions)
+                },
+            )
+            is Page.GroupMapping -> GroupMappingPage(
+                ratingId = current.ratingId,
+                competitionId = current.competitionId,
+                ratingGroups = current.ratingGroups,
+                initialSuggestions = current.suggestions,
+                onBack = { page = Page.RatingDetail(current.ratingId) },
+                onSaved = { page = Page.RatingDetail(current.ratingId) },
             )
             is Page.ClubJoinRequests -> ClubJoinRequestsPage(
                 clubId = current.clubId,
@@ -202,6 +266,7 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                 onClubClick = { clubId -> onNavigate(Page.ClubDetail(clubId)) },
                 onCreateClick = { onNavigate(Page.CreateClub) },
                 onMyJoinRequestsClick = { onNavigate(Page.MyJoinRequests) },
+                onRatingsSearchClick = { onNavigate(Page.RatingsSearch) },
             )
             else -> {}
         }

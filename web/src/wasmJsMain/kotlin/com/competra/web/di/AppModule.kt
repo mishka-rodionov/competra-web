@@ -9,6 +9,7 @@ import com.competra.data.repository.ClubRepository
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
+import com.competra.data.repository.RatingRepository
 import com.competra.data.repository.ResultRepository
 import com.competra.data.repository.TeamRepository
 import com.competra.data.repository.UserRepository
@@ -27,4 +28,5 @@ val appModule = module {
     single { GroupRepository(authClient = get(named("auth"))) }
     single { ClubRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
     single { TeamRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
+    single { RatingRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
 }
