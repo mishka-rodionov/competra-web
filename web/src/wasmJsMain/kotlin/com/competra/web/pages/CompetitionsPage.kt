@@ -58,7 +58,7 @@ private data class EventsFilter(
     val isEmpty: Boolean get() = kindOfSports.isEmpty() && statuses.isEmpty()
 }
 
-private val SPORT_TYPES = listOf(
+internal val SPORT_TYPES = listOf(
     "Orienteering" to "Ориентирование",
     "CrossCountrySki" to "Лыжное ориентирование",
     "TrailRunning" to "Трейловый бег",

@@ -5,10 +5,12 @@ import com.competra.data.api.createPublicHttpClient
 import com.competra.data.auth.AuthRepository
 import com.competra.data.auth.LocalStorageTokenStorage
 import com.competra.data.auth.TokenStorage
+import com.competra.data.repository.ClubRepository
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
 import com.competra.data.repository.ResultRepository
+import com.competra.data.repository.TeamRepository
 import com.competra.data.repository.UserRepository
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -23,4 +25,6 @@ val appModule = module {
     single { ResultRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
     single { UserRepository(authClient = get(named("auth"))) }
     single { GroupRepository(authClient = get(named("auth"))) }
+    single { ClubRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
+    single { TeamRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
 }

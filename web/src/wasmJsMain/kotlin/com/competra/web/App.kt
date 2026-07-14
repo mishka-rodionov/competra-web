@@ -20,16 +20,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.web.pages.AboutPage
+import com.competra.web.pages.ClubDetailPage
+import com.competra.web.pages.ClubJoinRequestsPage
+import com.competra.web.pages.ClubsListPage
 import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
+import com.competra.web.pages.CreateClubPage
 import com.competra.web.pages.CreateCompetitionPage
 import com.competra.web.pages.GroupSplitsTablePage
 import com.competra.web.pages.ManageCompetitionPage
 import com.competra.web.pages.ManagementPage
+import com.competra.web.pages.MyJoinRequestsPage
 import com.competra.web.pages.ParticipantSplitsPage
 import com.competra.web.pages.ProfileEditorPage
 import com.competra.web.pages.ProfilePage
 import com.competra.web.pages.RaceGraphPage
+import com.competra.web.pages.TeamDetailPage
 import com.competra.web.theme.CompetiraTheme
 
 sealed class Page {
@@ -44,6 +50,12 @@ sealed class Page {
     data class ParticipantSplits(val competitionId: String, val participantId: String) : Page()
     data class GroupSplitsTable(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
     data class RaceGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
+    data object Clubs : Page()
+    data object CreateClub : Page()
+    data class ClubDetail(val clubId: String) : Page()
+    data class ClubJoinRequests(val clubId: String) : Page()
+    data object MyJoinRequests : Page()
+    data class TeamDetail(val teamId: String, val clubId: String) : Page()
 }
 
 @Composable
@@ -97,6 +109,30 @@ fun App() {
                 onSaved = { page = Page.Profile },
             )
             is Page.About -> AboutPage(onBack = { page = Page.Profile })
+            is Page.CreateClub -> CreateClubPage(
+                onBack = { page = Page.Clubs },
+                onCreated = { clubId -> page = Page.ClubDetail(clubId) },
+                onLoginSuccess = { page = Page.CreateClub },
+            )
+            is Page.ClubDetail -> ClubDetailPage(
+                clubId = current.clubId,
+                onBack = { page = Page.Clubs },
+                onLoginSuccess = { page = Page.ClubDetail(current.clubId) },
+                onJoinRequestsClick = { clubId -> page = Page.ClubJoinRequests(clubId) },
+                onTeamClick = { teamId -> page = Page.TeamDetail(teamId, current.clubId) },
+            )
+            is Page.ClubJoinRequests -> ClubJoinRequestsPage(
+                clubId = current.clubId,
+                onBack = { page = Page.ClubDetail(current.clubId) },
+            )
+            is Page.MyJoinRequests -> MyJoinRequestsPage(
+                onBack = { page = Page.Clubs },
+                onClubClick = { clubId -> page = Page.ClubDetail(clubId) },
+            )
+            is Page.TeamDetail -> TeamDetailPage(
+                teamId = current.teamId,
+                onBack = { page = Page.ClubDetail(current.clubId) },
+            )
             else -> MainScaffold(currentPage = current, onNavigate = { page = it })
         }
     }
@@ -131,6 +167,12 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                     label = { Text("Управление") },
                 )
                 NavigationBarItem(
+                    selected = currentPage is Page.Clubs,
+                    onClick = { onNavigate(Page.Clubs) },
+                    icon = { NavIcon(selected = currentPage is Page.Clubs, label = "К") },
+                    label = { Text("Клубы") },
+                )
+                NavigationBarItem(
                     selected = currentPage is Page.Profile,
                     onClick = { onNavigate(Page.Profile) },
                     icon = { NavIcon(selected = currentPage is Page.Profile, label = "П") },
@@ -155,6 +197,11 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                 onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
                 onEditProfileClick = { onNavigate(Page.ProfileEditor) },
                 onAboutClick = { onNavigate(Page.About) },
+            )
+            is Page.Clubs -> ClubsListPage(
+                onClubClick = { clubId -> onNavigate(Page.ClubDetail(clubId)) },
+                onCreateClick = { onNavigate(Page.CreateClub) },
+                onMyJoinRequestsClick = { onNavigate(Page.MyJoinRequests) },
             )
             else -> {}
         }

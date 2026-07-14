@@ -411,7 +411,7 @@ private fun RegistrationDialog(
     )
 }
 
-private fun sportLabel(kind: String) = when (kind) {
+internal fun sportLabel(kind: String) = when (kind) {
     "Orienteering" -> "Ориентирование"
     "CrossCountrySki" -> "Лыжное ориентирование"
     "TrailRunning" -> "Трейловый бег"
