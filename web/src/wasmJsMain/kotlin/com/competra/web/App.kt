@@ -19,12 +19,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.domain.models.OrienteeringCompetition
+import com.competra.web.pages.AboutPage
 import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
 import com.competra.web.pages.CreateCompetitionPage
+import com.competra.web.pages.GroupSplitsTablePage
 import com.competra.web.pages.ManageCompetitionPage
 import com.competra.web.pages.ManagementPage
+import com.competra.web.pages.ParticipantSplitsPage
+import com.competra.web.pages.ProfileEditorPage
 import com.competra.web.pages.ProfilePage
+import com.competra.web.pages.RaceGraphPage
 import com.competra.web.theme.CompetiraTheme
 
 sealed class Page {
@@ -34,6 +39,11 @@ sealed class Page {
     data object CreateCompetition : Page()
     data class ManageCompetition(val competition: OrienteeringCompetition) : Page()
     data object Profile : Page()
+    data object ProfileEditor : Page()
+    data object About : Page()
+    data class ParticipantSplits(val competitionId: String, val participantId: String) : Page()
+    data class GroupSplitsTable(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
+    data class RaceGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
 }
 
 @Composable
@@ -45,6 +55,34 @@ fun App() {
             is Page.CompetitionDetail -> CompetitionDetailPage(
                 competitionId = current.competitionId,
                 onBack = { page = Page.Competitions },
+                onParticipantClick = { participantId ->
+                    page = Page.ParticipantSplits(current.competitionId, participantId)
+                },
+                onGroupSplitsClick = { groupId, groupTitle, distanceId ->
+                    page = Page.GroupSplitsTable(current.competitionId, groupId, groupTitle, distanceId)
+                },
+                onRaceGraphClick = { groupId, groupTitle, distanceId ->
+                    page = Page.RaceGraph(current.competitionId, groupId, groupTitle, distanceId)
+                },
+            )
+            is Page.ParticipantSplits -> ParticipantSplitsPage(
+                competitionId = current.competitionId,
+                participantId = current.participantId,
+                onBack = { page = Page.CompetitionDetail(current.competitionId) },
+            )
+            is Page.GroupSplitsTable -> GroupSplitsTablePage(
+                competitionId = current.competitionId,
+                groupId = current.groupId,
+                groupTitle = current.groupTitle,
+                distanceId = current.distanceId,
+                onBack = { page = Page.CompetitionDetail(current.competitionId) },
+            )
+            is Page.RaceGraph -> RaceGraphPage(
+                competitionId = current.competitionId,
+                groupId = current.groupId,
+                groupTitle = current.groupTitle,
+                distanceId = current.distanceId,
+                onBack = { page = Page.CompetitionDetail(current.competitionId) },
             )
             is Page.CreateCompetition -> CreateCompetitionPage(
                 onBack = { page = Page.Management },
@@ -54,6 +92,11 @@ fun App() {
                 competition = current.competition,
                 onBack = { page = Page.Management },
             )
+            is Page.ProfileEditor -> ProfileEditorPage(
+                onBack = { page = Page.Profile },
+                onSaved = { page = Page.Profile },
+            )
+            is Page.About -> AboutPage(onBack = { page = Page.Profile })
             else -> MainScaffold(currentPage = current, onNavigate = { page = it })
         }
     }
@@ -110,6 +153,8 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
             is Page.Profile -> ProfilePage(
                 onLoginSuccess = { onNavigate(Page.Competitions) },
                 onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
+                onEditProfileClick = { onNavigate(Page.ProfileEditor) },
+                onAboutClick = { onNavigate(Page.About) },
             )
             else -> {}
         }

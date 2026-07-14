@@ -52,7 +52,13 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
+fun CompetitionDetailPage(
+    competitionId: String,
+    onBack: () -> Unit,
+    onParticipantClick: (String) -> Unit = {},
+    onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
+    onRaceGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
+) {
     val repo: CompetitionRepository = koinInject()
     val userRepo: UserRepository = koinInject()
     val tokenStorage: TokenStorage = koinInject()
@@ -157,7 +163,14 @@ fun CompetitionDetailPage(competitionId: String, onBack: () -> Unit) {
                     },
                 )
                 2 -> DistancesTab(competitionId = competitionId)
-                3 -> ResultsTab(competitionId = competitionId, groups = d.participantGroups)
+                3 -> ResultsTab(
+                    competitionId = competitionId,
+                    groups = d.participantGroups,
+                    competitionStatus = d.status,
+                    onParticipantClick = onParticipantClick,
+                    onGroupSplitsClick = onGroupSplitsClick,
+                    onRaceGraphClick = onRaceGraphClick,
+                )
             }
         }
     }

@@ -41,6 +41,7 @@ data class OrienteeringResult(
     @SerialName("status")        val status: String = "FINISHED",
     @SerialName("penaltyTime")   val penaltyTime: Long = 0,
     @SerialName("splits")        val splits: List<SplitTime>? = null,
+    @SerialName("totalScore")    val totalScore: Int? = null,
     @SerialName("isEditable")    val isEditable: Boolean = true,
     @SerialName("isEdited")      val isEdited: Boolean = false,
 )

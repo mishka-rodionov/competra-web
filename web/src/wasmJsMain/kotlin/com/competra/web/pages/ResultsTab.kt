@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,17 +30,28 @@ import com.competra.domain.models.OrienteeringParticipant
 import com.competra.domain.models.OrienteeringResult
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.web.utils.formatTime
+import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 
+private const val LIVE_POLL_INTERVAL_MS = 30_000L
+private val LIVE_STATUSES = setOf("IN_PROGRESS", "STARTED")
+
 @Composable
-fun ResultsTab(competitionId: String, groups: List<ParticipantGroupDetail> = emptyList()) {
+fun ResultsTab(
+    competitionId: String,
+    groups: List<ParticipantGroupDetail> = emptyList(),
+    competitionStatus: String = "",
+    onParticipantClick: (String) -> Unit = {},
+    onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
+    onRaceGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
+) {
     val repo: ResultRepository = koinInject()
     var results by remember { mutableStateOf<List<OrienteeringResult>>(emptyList()) }
     var participants by remember { mutableStateOf<List<OrienteeringParticipant>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(competitionId) {
+    suspend fun reload() {
         val rResults = repo.getResults(competitionId)
         val rParticipants = repo.getParticipants(competitionId)
         when (rResults) {
@@ -49,7 +62,20 @@ fun ResultsTab(competitionId: String, groups: List<ParticipantGroupDetail> = emp
             is ApiResult.Success -> participants = rParticipants.data
             is ApiResult.Error -> {}
         }
+    }
+
+    LaunchedEffect(competitionId) {
+        reload()
         loading = false
+    }
+
+    if (competitionStatus in LIVE_STATUSES) {
+        LaunchedEffect(competitionId) {
+            while (true) {
+                delay(LIVE_POLL_INTERVAL_MS)
+                reload()
+            }
+        }
     }
 
     if (loading) {
@@ -79,17 +105,35 @@ fun ResultsTab(competitionId: String, groups: List<ParticipantGroupDetail> = emp
     val groupNamesById = groups.associate { it.groupId to it.title }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        if (competitionStatus in LIVE_STATUSES) {
+            item {
+                Text(
+                    "● LIVE — обновляется автоматически",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+        }
         sortedGroupIds.forEach { groupId ->
             val groupResults = (resultsByGroup[groupId] ?: emptyList())
                 .sortedWith(compareBy(nullsLast()) { it.rank })
             if (groupResults.isEmpty()) return@forEach
+            val groupTitle = groupNamesById[groupId] ?: "Группа $groupId"
+            val distanceId = groups.firstOrNull { it.groupId == groupId }?.distanceId
 
             item {
-                Text(
-                    groupNamesById[groupId] ?: "Группа $groupId",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(groupTitle, style = MaterialTheme.typography.titleSmall)
+                    Row {
+                        TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
+                        TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
+                    }
+                }
                 HorizontalDivider()
             }
 
@@ -108,7 +152,11 @@ fun ResultsTab(competitionId: String, groups: List<ParticipantGroupDetail> = emp
 
             items(groupResults) { result ->
                 val participant = participantsById[result.participantId]
-                ResultRow(result = result, participant = participant)
+                ResultRow(
+                    result = result,
+                    participant = participant,
+                    onClick = { onParticipantClick(result.participantId) },
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
@@ -116,13 +164,13 @@ fun ResultsTab(competitionId: String, groups: List<ParticipantGroupDetail> = emp
 }
 
 @Composable
-private fun ResultRow(result: OrienteeringResult, participant: OrienteeringParticipant?) {
+private fun ResultRow(result: OrienteeringResult, participant: OrienteeringParticipant?, onClick: () -> Unit) {
     val name = if (participant != null) "${participant.lastName} ${participant.firstName}" else "Участник ${result.participantId}"
     val timeStr = result.totalTime?.let { formatTime(it) } ?: "—"
     val statusStr = resultStatusLabel(result.status)
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -152,7 +200,7 @@ private fun ResultRow(result: OrienteeringResult, participant: OrienteeringParti
 }
 
 @Composable
-private fun resultStatusColor(status: String) = when (status) {
+internal fun resultStatusColor(status: String) = when (status) {
     "FINISHED" -> MaterialTheme.colorScheme.primary
     "DNF" -> MaterialTheme.colorScheme.error
     "DNS" -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -160,7 +208,7 @@ private fun resultStatusColor(status: String) = when (status) {
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
-private fun resultStatusLabel(status: String) = when (status) {
+internal fun resultStatusLabel(status: String) = when (status) {
     "FINISHED" -> "Финиш"
     "DNF" -> "НФ"
     "DNS" -> "НС"

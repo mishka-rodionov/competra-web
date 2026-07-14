@@ -15,3 +15,12 @@ data class UserProfile(
     @SerialName("gender")      val gender: String? = null,
     @SerialName("phoneNumber") val phoneNumber: String? = null,
 )
+
+/** Тело PATCH-запроса на обновление профиля — сервер меняет только переданные поля. */
+@Serializable
+data class UserProfileUpdateRequest(
+    @SerialName("first_name")  val firstName: String? = null,
+    @SerialName("last_name")   val lastName: String? = null,
+    @SerialName("middle_name") val middleName: String? = null,
+    @SerialName("birth_date")  val birthDate: Long? = null,
+)

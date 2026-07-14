@@ -48,6 +48,8 @@ private fun currentTimeMs(): Long = jsDateNow().toLong()
 fun ProfilePage(
     onLoginSuccess: () -> Unit,
     onCompetitionClick: (String) -> Unit,
+    onEditProfileClick: () -> Unit,
+    onAboutClick: () -> Unit,
 ) {
     val tokenStorage: TokenStorage = koinInject()
     val authRepo: AuthRepository = koinInject()
@@ -90,7 +92,7 @@ fun ProfilePage(
     }
 
     if (!isLoggedIn) {
-        UnauthenticatedProfile(onLoginClick = { showLogin = true })
+        UnauthenticatedProfile(onLoginClick = { showLogin = true }, onAboutClick = onAboutClick)
         return
     }
 
@@ -131,6 +133,12 @@ fun ProfilePage(
                         } else {
                             Text("Профиль пользователя", style = MaterialTheme.typography.titleMedium)
                         }
+                        OutlinedButton(
+                            onClick = onEditProfileClick,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) {
+                            Text("Редактировать")
+                        }
                     }
                 }
             }
@@ -163,13 +171,19 @@ fun ProfilePage(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 OutlinedButton(
+                    onClick = onAboutClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("О приложении")
+                }
+                OutlinedButton(
                     onClick = {
                         authRepo.logout()
                         profile = null
                         upcomingCompetitions = emptyList()
                         onLoginSuccess()
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     Text("Выйти из аккаунта", color = MaterialTheme.colorScheme.error)
                 }
@@ -197,7 +211,7 @@ private fun UpcomingCompetitionCard(competition: OrienteeringCompetition, onClic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun UnauthenticatedProfile(onLoginClick: () -> Unit) {
+private fun UnauthenticatedProfile(onLoginClick: () -> Unit, onAboutClick: () -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Профиль") }) }
     ) { padding ->
@@ -221,6 +235,12 @@ private fun UnauthenticatedProfile(onLoginClick: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Войти / Зарегистрироваться")
+                }
+                OutlinedButton(
+                    onClick = onAboutClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("О приложении")
                 }
             }
         }

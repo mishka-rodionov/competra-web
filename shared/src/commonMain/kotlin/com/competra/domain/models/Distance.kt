@@ -19,9 +19,11 @@ data class Distance(
 
 @Serializable
 data class ControlPoint(
-    @SerialName("number") val number: Int,
-    @SerialName("role")   val role: String = "ORDINARY",
-    @SerialName("score")  val score: Int = 0,
+    @SerialName("number")    val number: Int,
+    @SerialName("role")      val role: String = "ORDINARY",
+    @SerialName("score")     val score: Int = 0,
+    @SerialName("latitude")  val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )
 
 @Serializable
