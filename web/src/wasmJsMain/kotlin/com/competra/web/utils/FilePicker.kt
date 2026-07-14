@@ -24,3 +24,7 @@ fun pickXmlFile(onPicked: (fileName: String, content: String) -> Unit) =
 /** Выбор HTML файла (протокол результатов). Колбэк получает имя файла и его содержимое. */
 fun pickHtmlFile(onPicked: (fileName: String, content: String) -> Unit) =
     jsPickFile(".html", onPicked)
+
+/** Выбор GPX файла (трек тренировки). Колбэк получает имя файла и его содержимое. */
+fun pickGpxFile(onPicked: (fileName: String, content: String) -> Unit) =
+    jsPickFile(".gpx", onPicked)

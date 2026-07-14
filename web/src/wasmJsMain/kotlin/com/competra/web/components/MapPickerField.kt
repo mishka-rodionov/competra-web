@@ -27,44 +27,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.asComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.competra.web.utils.OSM_TILE_SIZE
 import com.competra.web.utils.latToTileY
+import com.competra.web.utils.loadTileBitmap
 import com.competra.web.utils.lonToTileX
-import com.competra.web.utils.osmTileUrl
 import com.competra.web.utils.tileXToLon
 import com.competra.web.utils.tileYToLat
-import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsBytes
 import kotlinx.coroutines.launch
-import org.jetbrains.skia.Bitmap
-import org.jetbrains.skia.Image
-
-private val tileHttpClient = HttpClient()
-
-private val tileBitmapCache = mutableMapOf<String, ImageBitmap>()
-
-private suspend fun loadTileBitmap(zoom: Int, x: Int, y: Int): ImageBitmap? {
-    val key = "$zoom/$x/$y"
-    tileBitmapCache[key]?.let { return it }
-    return try {
-        val bytes = tileHttpClient.get(osmTileUrl(zoom, x, y)).bodyAsBytes()
-        val image = Image.makeFromEncoded(bytes)
-        val skiaBitmap = Bitmap().apply {
-            allocPixels(image.imageInfo)
-            image.readPixels(this)
-            setImmutable()
-        }
-        val bitmap = skiaBitmap.asComposeImageBitmap()
-        tileBitmapCache[key] = bitmap
-        bitmap
-    } catch (e: Exception) {
-        null
-    }
-}
 
 private const val DEFAULT_ZOOM = 14
 private const val MIN_ZOOM = 3

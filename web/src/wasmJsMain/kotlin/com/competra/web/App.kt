@@ -31,6 +31,7 @@ import com.competra.web.pages.CompetitionDetailPage
 import com.competra.web.pages.CompetitionsPage
 import com.competra.web.pages.CreateClubPage
 import com.competra.web.pages.CreateCompetitionPage
+import com.competra.web.pages.DiaryListPage
 import com.competra.web.pages.GroupMappingPage
 import com.competra.web.pages.GroupSplitsTablePage
 import com.competra.web.pages.ManageCompetitionPage
@@ -44,6 +45,9 @@ import com.competra.web.pages.RatingDetailPage
 import com.competra.web.pages.RatingFormPage
 import com.competra.web.pages.RatingsSearchPage
 import com.competra.web.pages.TeamDetailPage
+import com.competra.web.pages.WorkoutDetailPage
+import com.competra.web.pages.WorkoutEditorPage
+import com.competra.web.pages.WorkoutTrackPage
 import com.competra.web.theme.CompetiraTheme
 
 sealed class Page {
@@ -78,6 +82,10 @@ sealed class Page {
         val ratingGroups: List<RatingGroup>,
         val suggestions: List<RatingGroupMappingSuggestion>? = null,
     ) : Page()
+    data object Diary : Page()
+    data class WorkoutEditor(val workoutId: Long? = null) : Page()
+    data class WorkoutDetail(val workoutId: Long) : Page()
+    data class WorkoutTrack(val workoutId: Long) : Page()
 }
 
 @Composable
@@ -197,6 +205,22 @@ fun App() {
                 teamId = current.teamId,
                 onBack = { page = Page.ClubDetail(current.clubId) },
             )
+            is Page.WorkoutEditor -> WorkoutEditorPage(
+                workoutId = current.workoutId,
+                onBack = { page = current.workoutId?.let { Page.WorkoutDetail(it) } ?: Page.Diary },
+                onSaved = { workout -> page = Page.WorkoutDetail(workout.id) },
+                onLoginSuccess = { page = Page.WorkoutEditor(current.workoutId) },
+            )
+            is Page.WorkoutDetail -> WorkoutDetailPage(
+                workoutId = current.workoutId,
+                onBack = { page = Page.Diary },
+                onEditClick = { workoutId -> page = Page.WorkoutEditor(workoutId) },
+                onTrackClick = { workoutId -> page = Page.WorkoutTrack(workoutId) },
+            )
+            is Page.WorkoutTrack -> WorkoutTrackPage(
+                workoutId = current.workoutId,
+                onBack = { page = Page.WorkoutDetail(current.workoutId) },
+            )
             else -> MainScaffold(currentPage = current, onNavigate = { page = it })
         }
     }
@@ -237,6 +261,12 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                     label = { Text("Клубы") },
                 )
                 NavigationBarItem(
+                    selected = currentPage is Page.Diary,
+                    onClick = { onNavigate(Page.Diary) },
+                    icon = { NavIcon(selected = currentPage is Page.Diary, label = "Д") },
+                    label = { Text("Дневник") },
+                )
+                NavigationBarItem(
                     selected = currentPage is Page.Profile,
                     onClick = { onNavigate(Page.Profile) },
                     icon = { NavIcon(selected = currentPage is Page.Profile, label = "П") },
@@ -267,6 +297,11 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                 onCreateClick = { onNavigate(Page.CreateClub) },
                 onMyJoinRequestsClick = { onNavigate(Page.MyJoinRequests) },
                 onRatingsSearchClick = { onNavigate(Page.RatingsSearch) },
+            )
+            is Page.Diary -> DiaryListPage(
+                onWorkoutClick = { workoutId -> onNavigate(Page.WorkoutDetail(workoutId)) },
+                onCreateClick = { onNavigate(Page.WorkoutEditor(null)) },
+                onLoginSuccess = { onNavigate(Page.Diary) },
             )
             else -> {}
         }

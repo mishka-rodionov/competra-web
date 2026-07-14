@@ -7,6 +7,7 @@ import com.competra.data.auth.LocalStorageTokenStorage
 import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.ClubRepository
 import com.competra.data.repository.CompetitionRepository
+import com.competra.data.repository.DiaryRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
 import com.competra.data.repository.RatingRepository
@@ -29,4 +30,5 @@ val appModule = module {
     single { ClubRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
     single { TeamRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
     single { RatingRepository(publicClient = get(named("public")), authClient = get(named("auth"))) }
+    single { DiaryRepository(authClient = get(named("auth"))) }
 }
