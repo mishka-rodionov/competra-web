@@ -47,6 +47,7 @@ import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
 import com.competra.data.repository.UserRepository
 import com.competra.domain.models.CompetitionFields
+import com.competra.domain.models.Coordinates
 import com.competra.domain.models.ControlPoint
 import com.competra.domain.models.CreateCompetitionRequest
 import com.competra.domain.models.CreateGroupRequest
@@ -55,6 +56,7 @@ import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.SaveDistanceRequest
 import com.competra.web.components.DateField
 import com.competra.web.components.LabeledDropdown
+import com.competra.web.components.MapPickerField
 import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
@@ -123,6 +125,8 @@ fun CreateCompetitionPage(
     var startTime by remember { mutableStateOf("10:00") }
     var zoneId by remember { mutableStateOf(DEFAULT_TIME_ZONE) }
     var address by remember { mutableStateOf("") }
+    var latitude by remember { mutableStateOf<Double?>(null) }
+    var longitude by remember { mutableStateOf<Double?>(null) }
     var description by remember { mutableStateOf("") }
     var direction by remember { mutableStateOf("FORWARD") }
     var punchingSystem by remember { mutableStateOf("SPORTIDENT") }
@@ -191,6 +195,7 @@ fun CreateCompetitionPage(
                     kindOfSport = "Orienteering",
                     description = description.trimOrNull(),
                     address = address.trimOrNull(),
+                    coordinates = if (latitude != null && longitude != null) Coordinates(latitude!!, longitude!!) else null,
                     status = if (regStart == null) "REGISTRATION_OPEN" else "CREATED",
                     registrationStart = regStart,
                     registrationEnd = regEnd,
@@ -360,6 +365,8 @@ fun CreateCompetitionPage(
                     startTime = startTime, onStartTime = { startTime = it },
                     zoneId = zoneId, onZone = { zoneId = it },
                     address = address, onAddress = { address = it },
+                    latitude = latitude, longitude = longitude,
+                    onCoordinates = { lat, lon -> latitude = lat; longitude = lon },
                     description = description, onDescription = { description = it },
                     direction = direction, onDirection = { direction = it },
                     punchingSystem = punchingSystem, onPunching = { punchingSystem = it },
@@ -485,6 +492,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.basicStep(
     startTime: String, onStartTime: (String) -> Unit,
     zoneId: String, onZone: (String) -> Unit,
     address: String, onAddress: (String) -> Unit,
+    latitude: Double?, longitude: Double?, onCoordinates: (Double, Double) -> Unit,
     description: String, onDescription: (String) -> Unit,
     direction: String, onDirection: (String) -> Unit,
     punchingSystem: String, onPunching: (String) -> Unit,
@@ -517,6 +525,17 @@ private fun androidx.compose.foundation.lazy.LazyListScope.basicStep(
             value = address, onValueChange = onAddress,
             label = { Text("Место проведения") },
             modifier = Modifier.fillMaxWidth(), singleLine = true,
+        )
+    }
+    item {
+        Text("Координаты старта на карте", style = MaterialTheme.typography.labelLarge)
+    }
+    item {
+        MapPickerField(
+            latitude = latitude,
+            longitude = longitude,
+            onPick = onCoordinates,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
     item {

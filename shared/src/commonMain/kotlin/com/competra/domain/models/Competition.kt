@@ -4,6 +4,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class Coordinates(
+    @SerialName("latitude")  val latitude: Double,
+    @SerialName("longitude") val longitude: Double,
+)
+
+@Serializable
 data class Competition(
     @SerialName("id")              val id: String = "",
     @SerialName("legacyId")        val legacyId: Long? = null,
@@ -13,6 +19,7 @@ data class Competition(
     @SerialName("kindOfSport")     val kindOfSport: String = "",
     @SerialName("description")     val description: String? = null,
     @SerialName("address")         val address: String? = null,
+    @SerialName("coordinates")     val coordinates: Coordinates? = null,
     @SerialName("status")          val status: String = "",
     @SerialName("imageUrl")        val imageUrl: String? = null,
     @SerialName("contactPhone")    val contactPhone: String? = null,
@@ -55,6 +62,7 @@ data class CompetitionDetail(
     @SerialName("kindOfSport")         val kindOfSport: String = "",
     @SerialName("description")         val description: String? = null,
     @SerialName("address")             val address: String? = null,
+    @SerialName("coordinates")         val coordinates: Coordinates? = null,
     @SerialName("status")              val status: String = "",
     @SerialName("imageUrl")            val imageUrl: String? = null,
     @SerialName("contactPhone")        val contactPhone: String? = null,
@@ -105,6 +113,7 @@ data class CompetitionFields(
     @SerialName("kindOfSport")        val kindOfSport: String = "Orienteering",
     @SerialName("description")        val description: String? = null,
     @SerialName("address")            val address: String? = null,
+    @SerialName("coordinates")        val coordinates: Coordinates? = null,
     @SerialName("status")             val status: String = "REGISTRATION_OPEN",
     @SerialName("registrationStart")  val registrationStart: Long? = null,
     @SerialName("registrationEnd")    val registrationEnd: Long? = null,

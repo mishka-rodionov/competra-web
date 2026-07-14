@@ -49,6 +49,7 @@ import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.GroupRepository
 import com.competra.data.repository.ResultRepository
 import com.competra.domain.models.CompetitionFields
+import com.competra.domain.models.Coordinates
 import com.competra.domain.models.CreateCompetitionRequest
 import com.competra.domain.models.CreateGroupRequest
 import com.competra.domain.models.Distance
@@ -59,6 +60,7 @@ import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.web.components.DateField
 import com.competra.web.components.ImportResultsPreviewDialog
 import com.competra.web.components.LabeledDropdown
+import com.competra.web.components.MapPickerField
 import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
@@ -109,14 +111,16 @@ fun ManageCompetitionPage(
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Общее") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Группы") })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Дистанции") })
-                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Результаты") })
+                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Участники") })
+                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Дистанции") })
+                Tab(selected = selectedTab == 4, onClick = { selectedTab = 4 }, text = { Text("Результаты") })
             }
             when (selectedTab) {
                 0 -> EditTab(competition)
                 1 -> GroupsTab(competition)
-                2 -> DistancesTab(competitionId = competition.competitionId, showImport = true)
-                3 -> ResultsManageTab(
+                2 -> ParticipantsManageTab(competition)
+                3 -> DistancesTab(competitionId = competition.competitionId, showImport = true)
+                4 -> ResultsManageTab(
                     competitionId = competition.competitionId,
                     competitionTitle = competition.competition.title,
                 )
@@ -139,6 +143,8 @@ private fun EditTab(competition: OrienteeringCompetition) {
     var selectedZone by remember { mutableStateOf(zoneId) }
     var endMillis by remember { mutableStateOf(c.endDate) }
     var address by remember { mutableStateOf(c.address ?: "") }
+    var latitude by remember { mutableStateOf(c.coordinates?.latitude) }
+    var longitude by remember { mutableStateOf(c.coordinates?.longitude) }
     var description by remember { mutableStateOf(c.description ?: "") }
     var direction by remember { mutableStateOf(competition.direction.ifBlank { "FORWARD" }) }
     var punchingSystem by remember { mutableStateOf(competition.punchingSystem.ifBlank { "SPORTIDENT" }) }
@@ -217,6 +223,16 @@ private fun EditTab(competition: OrienteeringCompetition) {
                 label = { Text("Место проведения") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+            )
+        }
+
+        item { Text("Координаты старта на карте", style = MaterialTheme.typography.labelLarge) }
+        item {
+            MapPickerField(
+                latitude = latitude,
+                longitude = longitude,
+                onPick = { lat, lon -> latitude = lat; longitude = lon },
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
@@ -406,6 +422,7 @@ private fun EditTab(competition: OrienteeringCompetition) {
                                 kindOfSport = c.kindOfSport.ifBlank { "Orienteering" },
                                 description = description.trimOrNull(),
                                 address = address.trimOrNull(),
+                                coordinates = if (latitude != null && longitude != null) Coordinates(latitude!!, longitude!!) else null,
                                 status = selectedStatus,
                                 registrationStart = registrationStartMillis?.let { zonedDateTimeToUtcMillis(it, registrationStartTime, selectedZone) },
                                 registrationEnd = registrationEndMillis?.let { zonedDateTimeToUtcMillis(it, registrationEndTime, selectedZone) },

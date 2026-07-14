@@ -24,8 +24,30 @@ data class OrienteeringParticipant(
     @SerialName("groupId")       val groupId: Long = 0,
     @SerialName("groupName")     val groupName: String? = null,
     @SerialName("competitionId") val competitionId: String = "",
+    @SerialName("commandName")   val commandName: String? = null,
     @SerialName("startNumber")   val startNumber: String? = null,
     @SerialName("startTime")     val startTime: Long? = null,
+    @SerialName("chipNumber")    val chipNumber: Long? = null,
+    @SerialName("comment")       val comment: String? = null,
+    @SerialName("isChipGiven")   val isChipGiven: Boolean = false,
+)
+
+/** Запрос на создание/обновление участника вручную (без self-регистрации) — 1:1 с бэкендовым OrienteeringParticipantRequest. */
+@Serializable
+data class SaveParticipantRequest(
+    @SerialName("id")              val id: String,
+    @SerialName("userId")          val userId: String? = null,
+    @SerialName("firstName")       val firstName: String,
+    @SerialName("lastName")        val lastName: String,
+    @SerialName("groupId")         val groupId: Long,
+    @SerialName("groupName")       val groupName: String,
+    @SerialName("competitionId")   val competitionId: String,
+    @SerialName("commandName")     val commandName: String? = null,
+    @SerialName("startNumber")     val startNumber: Int,
+    @SerialName("startTime")       val startTime: Long,
+    @SerialName("chipNumber")      val chipNumber: Long = 0,
+    @SerialName("comment")         val comment: String? = null,
+    @SerialName("isChipGiven")     val isChipGiven: Boolean = false,
 )
 
 @Serializable
