@@ -38,6 +38,7 @@ import com.competra.web.pages.ManageCompetitionPage
 import com.competra.web.pages.ManagementPage
 import com.competra.web.pages.MyJoinRequestsPage
 import com.competra.web.pages.ParticipantSplitsPage
+import com.competra.web.pages.PrivacyPolicyPage
 import com.competra.web.pages.ProfileEditorPage
 import com.competra.web.pages.ProfilePage
 import com.competra.web.pages.RaceGraphPage
@@ -59,6 +60,7 @@ sealed class Page {
     data object Profile : Page()
     data object ProfileEditor : Page()
     data object About : Page()
+    data object PrivacyPolicy : Page()
     data class ParticipantSplits(val competitionId: String, val participantId: String) : Page()
     data class GroupSplitsTable(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
     data class RaceGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
@@ -89,8 +91,8 @@ sealed class Page {
 }
 
 @Composable
-fun App() {
-    var page by remember { mutableStateOf<Page>(Page.Competitions) }
+fun App(initialPage: Page = Page.Competitions) {
+    var page by remember { mutableStateOf(initialPage) }
 
     CompetiraTheme {
         when (val current = page) {
@@ -139,6 +141,7 @@ fun App() {
                 onSaved = { page = Page.Profile },
             )
             is Page.About -> AboutPage(onBack = { page = Page.Profile })
+            is Page.PrivacyPolicy -> PrivacyPolicyPage(onBack = { page = Page.Profile })
             is Page.CreateClub -> CreateClubPage(
                 onBack = { page = Page.Clubs },
                 onCreated = { clubId -> page = Page.ClubDetail(clubId) },
@@ -291,6 +294,7 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                 onCompetitionClick = { id -> onNavigate(Page.CompetitionDetail(id)) },
                 onEditProfileClick = { onNavigate(Page.ProfileEditor) },
                 onAboutClick = { onNavigate(Page.About) },
+                onPrivacyClick = { onNavigate(Page.PrivacyPolicy) },
             )
             is Page.Clubs -> ClubsListPage(
                 onClubClick = { clubId -> onNavigate(Page.ClubDetail(clubId)) },

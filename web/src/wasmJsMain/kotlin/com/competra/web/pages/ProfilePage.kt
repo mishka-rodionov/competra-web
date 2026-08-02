@@ -50,6 +50,7 @@ fun ProfilePage(
     onCompetitionClick: (String) -> Unit,
     onEditProfileClick: () -> Unit,
     onAboutClick: () -> Unit,
+    onPrivacyClick: () -> Unit,
 ) {
     val tokenStorage: TokenStorage = koinInject()
     val authRepo: AuthRepository = koinInject()
@@ -92,7 +93,11 @@ fun ProfilePage(
     }
 
     if (!isLoggedIn) {
-        UnauthenticatedProfile(onLoginClick = { showLogin = true }, onAboutClick = onAboutClick)
+        UnauthenticatedProfile(
+            onLoginClick = { showLogin = true },
+            onAboutClick = onAboutClick,
+            onPrivacyClick = onPrivacyClick,
+        )
         return
     }
 
@@ -177,6 +182,12 @@ fun ProfilePage(
                     Text("О приложении")
                 }
                 OutlinedButton(
+                    onClick = onPrivacyClick,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Text("Политика конфиденциальности")
+                }
+                OutlinedButton(
                     onClick = {
                         authRepo.logout()
                         profile = null
@@ -211,7 +222,11 @@ private fun UpcomingCompetitionCard(competition: OrienteeringCompetition, onClic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun UnauthenticatedProfile(onLoginClick: () -> Unit, onAboutClick: () -> Unit) {
+private fun UnauthenticatedProfile(
+    onLoginClick: () -> Unit,
+    onAboutClick: () -> Unit,
+    onPrivacyClick: () -> Unit,
+) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Профиль") }) }
     ) { padding ->
@@ -241,6 +256,12 @@ private fun UnauthenticatedProfile(onLoginClick: () -> Unit, onAboutClick: () ->
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("О приложении")
+                }
+                OutlinedButton(
+                    onClick = onPrivacyClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Политика конфиденциальности")
                 }
             }
         }
