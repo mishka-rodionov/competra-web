@@ -41,10 +41,12 @@ fun ResultsTab(
     competitionId: String,
     groups: List<ParticipantGroupDetail> = emptyList(),
     competitionStatus: String = "",
+    direction: String = "FORWARD",
     onParticipantClick: (String) -> Unit = {},
     onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
     onRaceGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
 ) {
+    val isByChoice = direction == "BY_CHOICE"
     val repo: ResultRepository = koinInject()
     var results by remember { mutableStateOf<List<OrienteeringResult>>(emptyList()) }
     var participants by remember { mutableStateOf<List<OrienteeringParticipant>>(emptyList()) }
@@ -129,9 +131,11 @@ fun ResultsTab(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(groupTitle, style = MaterialTheme.typography.titleSmall)
-                    Row {
-                        TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
-                        TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
+                    if (!isByChoice) {
+                        Row {
+                            TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
+                            TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
+                        }
                     }
                 }
                 HorizontalDivider()
@@ -143,7 +147,10 @@ fun ResultsTab(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text("#", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.4f))
-                    Text("Участник", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(2f))
+                    Text("Участник", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(if (isByChoice) 1.6f else 2f))
+                    if (isByChoice) {
+                        Text("Очки", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.7f))
+                    }
                     Text("Время", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                     Text("Статус", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                 }
@@ -155,6 +162,7 @@ fun ResultsTab(
                 ResultRow(
                     result = result,
                     participant = participant,
+                    isByChoice = isByChoice,
                     onClick = { onParticipantClick(result.participantId) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -164,13 +172,26 @@ fun ResultsTab(
 }
 
 @Composable
-private fun ResultRow(result: OrienteeringResult, participant: OrienteeringParticipant?, onClick: () -> Unit) {
+private fun ResultRow(
+    result: OrienteeringResult,
+    participant: OrienteeringParticipant?,
+    isByChoice: Boolean,
+    onClick: () -> Unit,
+) {
     val name = if (participant != null) "${participant.lastName} ${participant.firstName}" else "Участник ${result.participantId}"
     val timeStr = result.totalTime?.let { formatTime(it) } ?: "—"
     val statusStr = resultStatusLabel(result.status)
 
+    // Переходы к сплитам/графику скрыты для BY_CHOICE (порядок КП не регламентирован) —
+    // строка результата тоже не кликабельна, кликать там больше некуда.
+    val rowModifier = if (isByChoice) {
+        Modifier.fillMaxWidth().padding(vertical = 6.dp)
+    } else {
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp)
+    }
+
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        modifier = rowModifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -179,11 +200,18 @@ private fun ResultRow(result: OrienteeringResult, participant: OrienteeringParti
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.weight(0.4f),
         )
-        Column(modifier = Modifier.weight(2f)) {
+        Column(modifier = Modifier.weight(if (isByChoice) 1.6f else 2f)) {
             Text(name, style = MaterialTheme.typography.bodyMedium)
             participant?.startNumber?.let {
                 Text("№$it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+        if (isByChoice) {
+            Text(
+                result.totalScore?.toString() ?: "—",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(0.7f),
+            )
         }
         Text(
             timeStr,

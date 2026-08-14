@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
-fun DistancesTab(competitionId: String?, showImport: Boolean = false) {
+fun DistancesTab(competitionId: String?, showImport: Boolean = false, isByChoice: Boolean = false) {
     val repo: DistanceRepository = koinInject()
     val scope = rememberCoroutineScope()
 
@@ -62,6 +62,7 @@ fun DistancesTab(competitionId: String?, showImport: Boolean = false) {
     if (showCreateDialog && competitionId != null) {
         CreateDistanceDialog(
             competitionId = competitionId,
+            isByChoice = isByChoice,
             onDismiss = { showCreateDialog = false },
             onSaved = { updated ->
                 distances = updated
@@ -132,6 +133,7 @@ fun DistancesTab(competitionId: String?, showImport: Boolean = false) {
 @Composable
 private fun CreateDistanceDialog(
     competitionId: String,
+    isByChoice: Boolean,
     onDismiss: () -> Unit,
     onSaved: (List<Distance>) -> Unit,
     onError: (String) -> Unit,
@@ -182,11 +184,17 @@ private fun CreateDistanceDialog(
                     value = controlPointsInput,
                     onValueChange = { controlPointsInput = it },
                     label = { Text("КП через пробел") },
-                    placeholder = { Text("31 32 33 34") },
+                    placeholder = { Text(if (isByChoice) "31:2 32:5 33:3 34" else "31 32 33 34") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
+                if (isByChoice) {
+                    Text(
+                        "Формат «по выбору»: номер:баллы (например 32:5). Без баллов — по умолчанию 2.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 OutlinedTextField(
                     value = finishCp,
                     onValueChange = { finishCp = it.filter { c -> c.isDigit() } },
@@ -210,10 +218,7 @@ private fun CreateDistanceDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val controlPoints = controlPointsInput.trim()
-                        .split(Regex("\\s+"))
-                        .mapNotNull { it.toIntOrNull() }
-                        .map { ControlPoint(number = it) }
+                    val controlPoints = parseControlPoints(controlPointsInput, isByChoice)
                     val request = SaveDistanceRequest(
                         distanceId = null,
                         competitionId = competitionId,
@@ -243,6 +248,22 @@ private fun CreateDistanceDialog(
         },
     )
 }
+
+/**
+ * Разбирает поле «КП через пробел». Для обычных дистанций — просто номера ("31 32 33").
+ * Для «по выбору» (BY_CHOICE) каждый номер может нести баллы через двоеточие ("31:2 32:5"),
+ * при отсутствии баллов — дефолт 2 (как на Android, DistanceEditor.kt).
+ */
+internal fun parseControlPoints(input: String, isByChoice: Boolean): List<ControlPoint> =
+    input.trim()
+        .split(Regex("\\s+"))
+        .filter { it.isNotBlank() }
+        .mapNotNull { token ->
+            val parts = token.split(":")
+            val number = parts.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
+            val score = parts.getOrNull(1)?.toIntOrNull() ?: if (isByChoice) 2 else 0
+            ControlPoint(number = number, score = score)
+        }
 
 @Composable
 internal fun DistanceCard(distance: Distance) {

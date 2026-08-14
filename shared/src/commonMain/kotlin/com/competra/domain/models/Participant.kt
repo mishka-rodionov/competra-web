@@ -5,14 +5,20 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateGroupRequest(
-    @SerialName("groupId")         val groupId: Long = 0,
-    @SerialName("competitionId")   val competitionId: String,
-    @SerialName("title")           val title: String,
-    @SerialName("gender")          val gender: String? = null,
-    @SerialName("minAge")          val minAge: Int? = null,
-    @SerialName("maxAge")          val maxAge: Int? = null,
-    @SerialName("distanceId")      val distanceId: Long? = null,
-    @SerialName("maxParticipants") val maxParticipants: Int? = null,
+    @SerialName("groupId")               val groupId: Long = 0,
+    @SerialName("competitionId")         val competitionId: String,
+    @SerialName("title")                 val title: String,
+    @SerialName("gender")                val gender: String? = null,
+    @SerialName("minAge")                val minAge: Int? = null,
+    @SerialName("maxAge")                val maxAge: Int? = null,
+    @SerialName("distanceId")            val distanceId: Long? = null,
+    @SerialName("maxParticipants")       val maxParticipants: Int? = null,
+    /** Лимит времени для формата "по выбору" (BY_CHOICE), в минутах. */
+    @SerialName("timeLimitMinutes")      val timeLimitMinutes: Int? = null,
+    /** Штраф в очках за минуту опоздания сверх лимита (BY_CHOICE). */
+    @SerialName("scorePenaltyPerMinute") val scorePenaltyPerMinute: Int? = null,
+    /** Порог сильного опоздания, после которого результат обнуляется (BY_CHOICE). */
+    @SerialName("maxLatenessMinutes")    val maxLatenessMinutes: Int? = null,
 )
 
 @Serializable

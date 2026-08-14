@@ -119,11 +119,12 @@ fun ManageCompetitionPage(
                 0 -> EditTab(competition)
                 1 -> GroupsTab(competition)
                 2 -> ParticipantsManageTab(competition)
-                3 -> DistancesTab(competitionId = competition.competitionId, showImport = true)
-                4 -> ResultsManageTab(
+                3 -> DistancesTab(
                     competitionId = competition.competitionId,
-                    competitionTitle = competition.competition.title,
+                    showImport = true,
+                    isByChoice = competition.direction == "BY_CHOICE",
                 )
+                4 -> ResultsManageTab(competition = competition)
             }
         }
     }
@@ -488,6 +489,7 @@ private fun GroupsTab(competition: OrienteeringCompetition) {
         AddGroupDialog(
             competitionRemoteId = competitionId,
             distances = distances,
+            isByChoice = competition.direction == "BY_CHOICE",
             onDismiss = { showAddDialog = false },
             onSaved = { updated ->
                 groups = updated
@@ -563,6 +565,8 @@ private fun GroupCard(group: ParticipantGroupDetail, onDelete: () -> Unit) {
                     }
                     group.distanceName?.let { add("Дистанция: $it") }
                     group.maxParticipants?.let { add("Мест: ${group.registeredCount}/$it") }
+                    group.timeLimitMinutes?.let { add("Лимит: $it мин") }
+                    group.scorePenaltyPerMinute?.let { add("Штраф: $it очк/мин") }
                 }
                 if (details.isNotEmpty()) {
                     Text(
@@ -584,6 +588,7 @@ private fun GroupCard(group: ParticipantGroupDetail, onDelete: () -> Unit) {
 private fun AddGroupDialog(
     competitionRemoteId: String,
     distances: List<Distance>,
+    isByChoice: Boolean,
     onDismiss: () -> Unit,
     onSaved: (List<ParticipantGroupDetail>) -> Unit,
     onError: (String) -> Unit,
@@ -599,6 +604,9 @@ private fun AddGroupDialog(
     var maxParticipants by remember { mutableStateOf("") }
     var selectedDistance by remember { mutableStateOf<Distance?>(null) }
     var distanceExpanded by remember { mutableStateOf(false) }
+    var timeLimitMinutes by remember { mutableStateOf("60") }
+    var scorePenaltyPerMinute by remember { mutableStateOf("1") }
+    var maxLatenessMinutes by remember { mutableStateOf("30") }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -668,6 +676,36 @@ private fun AddGroupDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
 
+                if (isByChoice) {
+                    Text("Параметры «по выбору»", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = timeLimitMinutes,
+                            onValueChange = { timeLimitMinutes = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Лимит времени, мин") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                        OutlinedTextField(
+                            value = scorePenaltyPerMinute,
+                            onValueChange = { scorePenaltyPerMinute = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Штраф, очк/мин") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                    }
+                    OutlinedTextField(
+                        value = maxLatenessMinutes,
+                        onValueChange = { maxLatenessMinutes = it.filter { ch -> ch.isDigit() } },
+                        label = { Text("Порог обнуления, мин") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+                }
+
                 if (distances.isNotEmpty()) {
                     ExposedDropdownMenuBox(
                         expanded = distanceExpanded,
@@ -719,6 +757,9 @@ private fun AddGroupDialog(
                             maxAge = maxAge.toIntOrNull(),
                             distanceId = selectedDistance?.id,
                             maxParticipants = maxParticipants.toIntOrNull(),
+                            timeLimitMinutes = if (isByChoice) timeLimitMinutes.toIntOrNull() else null,
+                            scorePenaltyPerMinute = if (isByChoice) scorePenaltyPerMinute.toIntOrNull() else null,
+                            maxLatenessMinutes = if (isByChoice) maxLatenessMinutes.toIntOrNull() else null,
                         )
                         when (val r = repo.saveGroup(request)) {
                             is ApiResult.Success -> onSaved(r.data)
@@ -738,8 +779,11 @@ private fun AddGroupDialog(
 }
 
 @Composable
-private fun ResultsManageTab(competitionId: String, competitionTitle: String) {
+private fun ResultsManageTab(competition: OrienteeringCompetition) {
+    val competitionId = competition.competitionId
+    val competitionTitle = competition.competition.title
     val repo: ResultRepository = koinInject()
+    val competitionRepo: CompetitionRepository = koinInject()
     val scope = rememberCoroutineScope()
 
     var results by remember { mutableStateOf<List<OrienteeringResult>>(emptyList()) }
@@ -748,6 +792,9 @@ private fun ResultsManageTab(competitionId: String, competitionTitle: String) {
     var importing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var previewDiff by remember { mutableStateOf<ImportResultsDiff?>(null) }
+    var resultsStatus by remember { mutableStateOf(competition.competition.resultsStatus) }
+    var showPublishConfirm by remember { mutableStateOf(false) }
+    var publishing by remember { mutableStateOf(false) }
 
     LaunchedEffect(competitionId) {
         when (val r = repo.getResults(competitionId)) {
@@ -785,6 +832,43 @@ private fun ResultsManageTab(competitionId: String, competitionTitle: String) {
         )
     }
 
+    if (showPublishConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!publishing) showPublishConfirm = false },
+            title = { Text("Опубликовать результаты?") },
+            text = { Text("Результаты станут официальными и видимыми участникам. Это действие необратимо.") },
+            confirmButton = {
+                Button(
+                    enabled = !publishing,
+                    onClick = {
+                        scope.launch {
+                            publishing = true
+                            val request = CreateCompetitionRequest(
+                                competitionId = competition.competitionId,
+                                competition = competition.competition.toFields(resultsStatus = "OFFICIAL"),
+                                direction = competition.direction,
+                                punchingSystem = competition.punchingSystem,
+                                startTimeMode = competition.startTimeMode,
+                                startIntervalSeconds = competition.startIntervalSeconds,
+                            )
+                            when (val r = competitionRepo.createCompetition(request)) {
+                                is ApiResult.Success -> resultsStatus = "OFFICIAL"
+                                is ApiResult.Error -> error = r.message
+                            }
+                            publishing = false
+                            showPublishConfirm = false
+                        }
+                    },
+                ) {
+                    if (publishing) CircularProgressIndicator() else Text("Опубликовать")
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !publishing, onClick = { showPublishConfirm = false }) { Text("Отмена") }
+            },
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -807,6 +891,26 @@ private fun ResultsManageTab(competitionId: String, competitionTitle: String) {
                 },
             ) {
                 Text("Импорт из HTML")
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                if (resultsStatus == "OFFICIAL") "Статус: результаты официальные" else "Статус: результаты не опубликованы",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (resultsStatus != "OFFICIAL") {
+                OutlinedButton(
+                    enabled = !loading && results.isNotEmpty(),
+                    onClick = { showPublishConfirm = true },
+                ) {
+                    Text("Опубликовать результаты")
+                }
             }
         }
 
@@ -834,3 +938,29 @@ private fun ResultsManageTab(competitionId: String, competitionTitle: String) {
 }
 
 private fun String.trimOrNull(): String? = trim().takeIf { it.isNotEmpty() }
+
+private fun com.competra.domain.models.Competition.toFields(resultsStatus: String = this.resultsStatus): CompetitionFields = CompetitionFields(
+    title = title,
+    startDate = startDate,
+    endDate = endDate,
+    kindOfSport = kindOfSport,
+    description = description,
+    address = address,
+    coordinates = coordinates,
+    status = status,
+    registrationStart = registrationStart,
+    registrationEnd = registrationEnd,
+    maxParticipants = maxParticipants,
+    feeAmount = feeAmount,
+    feeCurrency = feeCurrency,
+    mainOrganizerId = mainOrganizerId,
+    contactPhone = contactPhone,
+    contactEmail = contactEmail,
+    website = website,
+    regulationUrl = regulationUrl,
+    mapUrl = mapUrl,
+    imageUrl = imageUrl,
+    resultsStatus = resultsStatus,
+    timeZoneId = timeZoneId.ifBlank { DEFAULT_TIME_ZONE },
+    isTest = isTest,
+)

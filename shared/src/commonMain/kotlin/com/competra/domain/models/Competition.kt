@@ -79,6 +79,8 @@ data class CompetitionDetail(
     @SerialName("isUserRegistered")    val isUserRegistered: Boolean = false,
     /** Тестовое соревнование: видно только владельцу, исключено из публичной ленты. */
     @SerialName("isTest")              val isTest: Boolean = false,
+    /** "FORWARD" / "BY_CHOICE" / "MARKING" — если бэкенд не присылает поле в публичном ответе, считаем классическим. */
+    @SerialName("direction")           val direction: String = "FORWARD",
 )
 
 @Serializable
@@ -95,6 +97,12 @@ data class ParticipantGroupDetail(
     @SerialName("distanceControlsCount")  val distanceControlsCount: Int? = null,
     @SerialName("maxParticipants")        val maxParticipants: Int? = null,
     @SerialName("registeredParticipant")  val registeredCount: Int = 0,
+    /** Лимит времени для формата "по выбору" (BY_CHOICE), в минутах. */
+    @SerialName("timeLimitMinutes")       val timeLimitMinutes: Int? = null,
+    /** Штраф в очках за минуту опоздания сверх лимита (BY_CHOICE). */
+    @SerialName("scorePenaltyPerMinute")  val scorePenaltyPerMinute: Int? = null,
+    /** Порог сильного опоздания, после которого результат обнуляется (BY_CHOICE). */
+    @SerialName("maxLatenessMinutes")     val maxLatenessMinutes: Int? = null,
 )
 
 @Serializable

@@ -88,6 +88,9 @@ private data class PendingGroup(
     val maxAge: Int?,
     val maxParticipants: Int?,
     val distanceIndex: Int,
+    val timeLimitMinutes: Int? = null,
+    val scorePenaltyPerMinute: Int? = null,
+    val maxLatenessMinutes: Int? = null,
 )
 
 private val REG_END_MODE_OPTIONS = listOf(
@@ -268,6 +271,9 @@ fun CreateCompetitionPage(
                         maxAge = g.maxAge,
                         distanceId = savedDistances.getOrNull(g.distanceIndex)?.id,
                         maxParticipants = g.maxParticipants,
+                        timeLimitMinutes = g.timeLimitMinutes,
+                        scorePenaltyPerMinute = g.scorePenaltyPerMinute,
+                        maxLatenessMinutes = g.maxLatenessMinutes,
                     )
                 }
                 when (val gr = groupRepo.saveGroups(groupRequests)) {
@@ -413,6 +419,7 @@ fun CreateCompetitionPage(
 
     if (showDistanceDialog) {
         DistanceDialog(
+            isByChoice = direction == "BY_CHOICE",
             onDismiss = { showDistanceDialog = false },
             onSave = { distances = distances + it; showDistanceDialog = false },
         )
@@ -420,6 +427,7 @@ fun CreateCompetitionPage(
     if (showGroupDialog) {
         GroupDialog(
             distances = distances,
+            isByChoice = direction == "BY_CHOICE",
             onDismiss = { showGroupDialog = false },
             onSave = { groups = groups + it; showGroupDialog = false },
         )
@@ -784,6 +792,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.groupsStep(
 
 @Composable
 private fun DistanceDialog(
+    isByChoice: Boolean,
     onDismiss: () -> Unit,
     onSave: (PendingDistance) -> Unit,
 ) {
@@ -814,10 +823,17 @@ private fun DistanceDialog(
                 }
                 OutlinedTextField(
                     value = controlPointsInput, onValueChange = { controlPointsInput = it },
-                    label = { Text("КП через пробел") }, placeholder = { Text("31 32 33 34") },
+                    label = { Text("КП через пробел") },
+                    placeholder = { Text(if (isByChoice) "31:2 32:5 33:3 34" else "31 32 33 34") },
                     modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
+                if (isByChoice) {
+                    Text(
+                        "Формат «по выбору»: номер:баллы (например 32:5). Без баллов — по умолчанию 2.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 OutlinedTextField(
                     value = finishCp, onValueChange = { finishCp = it.filter { c -> c.isDigit() } },
                     label = { Text("Финишное КП") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
@@ -828,10 +844,7 @@ private fun DistanceDialog(
         },
         confirmButton = {
             Button(onClick = {
-                val controlPoints = controlPointsInput.trim()
-                    .split(Regex("\\s+"))
-                    .mapNotNull { it.toIntOrNull() }
-                    .map { ControlPoint(number = it) }
+                val controlPoints = parseControlPoints(controlPointsInput, isByChoice)
                 onSave(
                     PendingDistance(
                         name = name.trimOrNull(),
@@ -852,6 +865,7 @@ private fun DistanceDialog(
 @Composable
 private fun GroupDialog(
     distances: List<PendingDistance>,
+    isByChoice: Boolean,
     onDismiss: () -> Unit,
     onSave: (PendingGroup) -> Unit,
 ) {
@@ -860,6 +874,9 @@ private fun GroupDialog(
     var maxAge by remember { mutableStateOf("") }
     var maxParticipants by remember { mutableStateOf("") }
     var distanceIndex by remember { mutableIntStateOf(0) }
+    var timeLimitMinutes by remember { mutableStateOf("60") }
+    var scorePenaltyPerMinute by remember { mutableStateOf("1") }
+    var maxLatenessMinutes by remember { mutableStateOf("30") }
     var error by remember { mutableStateOf<String?>(null) }
 
     androidx.compose.material3.AlertDialog(
@@ -885,6 +902,26 @@ private fun GroupDialog(
                     label = { Text("Лимит участников") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
+                if (isByChoice) {
+                    Text("Параметры «по выбору»", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = timeLimitMinutes, onValueChange = { timeLimitMinutes = it.filter { c -> c.isDigit() } },
+                            label = { Text("Лимит времени, мин") }, modifier = Modifier.weight(1f), singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                        OutlinedTextField(
+                            value = scorePenaltyPerMinute, onValueChange = { scorePenaltyPerMinute = it.filter { c -> c.isDigit() } },
+                            label = { Text("Штраф, очк/мин") }, modifier = Modifier.weight(1f), singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                    }
+                    OutlinedTextField(
+                        value = maxLatenessMinutes, onValueChange = { maxLatenessMinutes = it.filter { c -> c.isDigit() } },
+                        label = { Text("Порог обнуления, мин") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+                }
                 if (distances.isEmpty()) {
                     Text("Сначала добавьте дистанцию", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 } else {
@@ -909,6 +946,9 @@ private fun GroupDialog(
                             maxAge = maxAge.toIntOrNull(),
                             maxParticipants = maxParticipants.toIntOrNull(),
                             distanceIndex = distanceIndex,
+                            timeLimitMinutes = if (isByChoice) timeLimitMinutes.toIntOrNull() else null,
+                            scorePenaltyPerMinute = if (isByChoice) scorePenaltyPerMinute.toIntOrNull() else null,
+                            maxLatenessMinutes = if (isByChoice) maxLatenessMinutes.toIntOrNull() else null,
                         )
                     )
                 },

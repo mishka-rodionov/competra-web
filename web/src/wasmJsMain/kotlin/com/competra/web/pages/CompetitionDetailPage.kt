@@ -162,11 +162,12 @@ fun CompetitionDetailPage(
                         }
                     },
                 )
-                2 -> DistancesTab(competitionId = competitionId)
+                2 -> DistancesTab(competitionId = competitionId, isByChoice = d.direction == "BY_CHOICE")
                 3 -> ResultsTab(
                     competitionId = competitionId,
                     groups = d.participantGroups,
                     competitionStatus = d.status,
+                    direction = d.direction,
                     onParticipantClick = onParticipantClick,
                     onGroupSplitsClick = onGroupSplitsClick,
                     onRaceGraphClick = onRaceGraphClick,
