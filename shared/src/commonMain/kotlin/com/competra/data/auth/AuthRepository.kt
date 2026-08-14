@@ -7,6 +7,7 @@ import com.competra.data.api.safeApiCall
 import com.competra.data.api.safeApiCallUnit
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import kotlinx.serialization.SerialName
@@ -65,4 +66,10 @@ class AuthRepository(
     }
 
     fun logout() = tokenStorage.clearToken()
+
+    /** Необратимо удаляет аккаунт пользователя на бэкенде. Токен нужно очистить отдельно (см. [logout]) после успеха. */
+    suspend fun deleteAccount(): ApiResult<Unit> =
+        safeApiCallUnit {
+            client.delete("$BASE_URL/user/me").body<CommonModel<Unit?>>()
+        }
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,12 +19,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import com.competra.data.repository.UserRepository
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.UserProfile
 import com.competra.web.utils.toLocaleDateString
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @JsFun("() => Date.now()")
@@ -56,12 +60,16 @@ fun ProfilePage(
     val authRepo: AuthRepository = koinInject()
     val userRepo: UserRepository = koinInject()
     val competitionRepo: CompetitionRepository = koinInject()
+    val scope = rememberCoroutineScope()
 
     var showLogin by remember { mutableStateOf(false) }
     val isLoggedIn = tokenStorage.isLoggedIn()
     var profile by remember { mutableStateOf<UserProfile?>(null) }
     var upcomingCompetitions by remember { mutableStateOf<List<OrienteeringCompetition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(isLoggedIn) {
         if (!isLoggedIn) {
@@ -84,11 +92,52 @@ fun ProfilePage(
         loading = false
     }
 
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!deleting) showDeleteConfirm = false },
+            title = { Text("Удалить аккаунт?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Аккаунт и связанные с ним данные будут удалены безвозвратно. Это действие необратимо.")
+                    deleteError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = !deleting,
+                    onClick = {
+                        scope.launch {
+                            deleting = true
+                            deleteError = null
+                            when (val r = authRepo.deleteAccount()) {
+                                is ApiResult.Success -> {
+                                    authRepo.logout()
+                                    showDeleteConfirm = false
+                                    onLoginSuccess()
+                                }
+                                is ApiResult.Error -> deleteError = r.message
+                            }
+                            deleting = false
+                        }
+                    },
+                ) {
+                    if (deleting) CircularProgressIndicator() else Text("Удалить")
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !deleting, onClick = { showDeleteConfirm = false }) { Text("Отмена") }
+            },
+        )
+    }
+
     if (showLogin) {
-        LoginPage(onLoginSuccess = {
-            showLogin = false
-            onLoginSuccess()
-        })
+        LoginPage(
+            onLoginSuccess = {
+                showLogin = false
+                onLoginSuccess()
+            },
+            onPrivacyClick = onPrivacyClick,
+        )
         return
     }
 
@@ -197,6 +246,12 @@ fun ProfilePage(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     Text("Выйти из аккаунта", color = MaterialTheme.colorScheme.error)
+                }
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Text("Удалить аккаунт", color = MaterialTheme.colorScheme.error)
                 }
             }
         }

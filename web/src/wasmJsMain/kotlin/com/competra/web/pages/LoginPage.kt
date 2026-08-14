@@ -1,8 +1,10 @@
 package com.competra.web.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -29,7 +32,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
-fun LoginPage(onLoginSuccess: () -> Unit) {
+fun LoginPage(onLoginSuccess: () -> Unit, onPrivacyClick: () -> Unit = {}) {
     val authRepo: AuthRepository = koinInject()
     val scope = rememberCoroutineScope()
 
@@ -38,6 +41,7 @@ fun LoginPage(onLoginSuccess: () -> Unit) {
     var step by remember { mutableStateOf(LoginStep.Email) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var consentChecked by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
@@ -57,6 +61,22 @@ fun LoginPage(onLoginSuccess: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { consentChecked = !consentChecked },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = consentChecked, onCheckedChange = { consentChecked = it })
+                        Text(
+                            "Согласен с обработкой персональных данных",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Text(
+                        "Политика конфиденциальности",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth().clickable(onClick = onPrivacyClick),
+                    )
                     Button(
                         onClick = {
                             scope.launch {
@@ -69,7 +89,7 @@ fun LoginPage(onLoginSuccess: () -> Unit) {
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = email.isNotBlank() && !loading,
+                        enabled = email.isNotBlank() && consentChecked && !loading,
                     ) { Text("Получить код") }
                 }
                 LoginStep.Code -> {
