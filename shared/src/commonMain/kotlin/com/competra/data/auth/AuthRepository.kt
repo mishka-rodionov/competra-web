@@ -23,6 +23,9 @@ data class CodeVerificationRequest(
 )
 
 @Serializable
+data class RefreshRequest(@SerialName("refreshToken") val refreshToken: String)
+
+@Serializable
 data class AuthResponse(
     @SerialName("user")  val user: UserInfo? = null,
     @SerialName("token") val token: TokenInfo,
@@ -60,7 +63,7 @@ class AuthRepository(
             }.body<CommonModel<AuthResponse>>()
         }
         if (result is ApiResult.Success) {
-            tokenStorage.saveToken(result.data.token.accessToken)
+            tokenStorage.saveTokens(result.data.token.accessToken, result.data.token.refreshToken)
         }
         return result
     }

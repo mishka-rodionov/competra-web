@@ -16,6 +16,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.neg)
             implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.auth)
             implementation(libs.ktor.serialization.json)
             implementation(libs.kotlinx.serialization)
             implementation(libs.kotlinx.coroutines)

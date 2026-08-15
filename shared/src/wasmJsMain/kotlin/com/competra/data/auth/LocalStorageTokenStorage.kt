@@ -10,8 +10,16 @@ private external fun jsSet(key: String, value: String)
 private external fun jsRemove(key: String)
 
 class LocalStorageTokenStorage : TokenStorage {
-    private val KEY = "competra_access_token"
-    override fun getToken(): String? = jsGet(KEY)
-    override fun saveToken(token: String) = jsSet(KEY, token)
-    override fun clearToken() = jsRemove(KEY)
+    private val ACCESS_KEY = "competra_access_token"
+    private val REFRESH_KEY = "competra_refresh_token"
+    override fun getToken(): String? = jsGet(ACCESS_KEY)
+    override fun getRefreshToken(): String? = jsGet(REFRESH_KEY)
+    override fun saveTokens(accessToken: String, refreshToken: String) {
+        jsSet(ACCESS_KEY, accessToken)
+        jsSet(REFRESH_KEY, refreshToken)
+    }
+    override fun clearToken() {
+        jsRemove(ACCESS_KEY)
+        jsRemove(REFRESH_KEY)
+    }
 }
