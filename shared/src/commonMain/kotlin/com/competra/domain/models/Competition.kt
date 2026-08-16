@@ -75,6 +75,11 @@ data class CompetitionDetail(
     @SerialName("registrationEnd")     val registrationEnd: Long? = null,
     @SerialName("resultsStatus")       val resultsStatus: String = "NOT_PUBLISHED",
     @SerialName("mainOrganizerId")     val mainOrganizerId: String? = null,
+    @SerialName("organizingClubId")    val organizingClubId: String? = null,
+    @SerialName("website")             val website: String? = null,
+    @SerialName("regulationUrl")       val regulationUrl: String? = null,
+    @SerialName("mapUrl")              val mapUrl: String? = null,
+    @SerialName("resultsUrl")          val resultsUrl: String? = null,
     @SerialName("participantGroups")   val participantGroups: List<ParticipantGroupDetail> = emptyList(),
     @SerialName("isUserRegistered")    val isUserRegistered: Boolean = false,
     /** Тестовое соревнование: видно только владельцу, исключено из публичной ленты. */
@@ -95,6 +100,7 @@ data class ParticipantGroupDetail(
     @SerialName("distanceLengthMeters")   val distanceLengthMeters: Int? = null,
     @SerialName("distanceClimbMeters")    val distanceClimbMeters: Int? = null,
     @SerialName("distanceControlsCount")  val distanceControlsCount: Int? = null,
+    @SerialName("distanceDescription")    val distanceDescription: String? = null,
     @SerialName("maxParticipants")        val maxParticipants: Int? = null,
     @SerialName("registeredParticipant")  val registeredCount: Int = 0,
     /** Лимит времени для формата "по выбору" (BY_CHOICE), в минутах. */

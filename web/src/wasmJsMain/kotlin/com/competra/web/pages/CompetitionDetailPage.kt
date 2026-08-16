@@ -1,5 +1,6 @@
 package com.competra.web.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,12 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.auth.TokenStorage
+import com.competra.data.repository.ClubRepository
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.UserRepository
 import com.competra.domain.models.CompetitionDetail
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.domain.models.RegisterEventRequest
 import com.competra.domain.models.UserProfile
+import com.competra.web.utils.openExternalLink
 import com.competra.web.utils.toLocaleDateString
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -63,11 +66,13 @@ fun CompetitionDetailPage(
 ) {
     val repo: CompetitionRepository = koinInject()
     val userRepo: UserRepository = koinInject()
+    val clubRepo: ClubRepository = koinInject()
     val tokenStorage: TokenStorage = koinInject()
     val isLoggedIn = tokenStorage.isLoggedIn()
     val scope = rememberCoroutineScope()
 
     var detail by remember { mutableStateOf<CompetitionDetail?>(null) }
+    var organizerClubName by remember { mutableStateOf<String?>(null) }
     var profile by remember { mutableStateOf<UserProfile?>(null) }
     var loading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(initialTab) }
@@ -78,7 +83,15 @@ fun CompetitionDetailPage(
 
     LaunchedEffect(competitionId) {
         when (val r = repo.getCompetitionDetail(competitionId)) {
-            is ApiResult.Success -> detail = r.data
+            is ApiResult.Success -> {
+                detail = r.data
+                r.data.organizingClubId?.let { clubId ->
+                    when (val c = clubRepo.getClub(clubId)) {
+                        is ApiResult.Success -> organizerClubName = c.data.name
+                        is ApiResult.Error -> {}
+                    }
+                }
+            }
             is ApiResult.Error -> {}
         }
         if (isLoggedIn) {
@@ -145,7 +158,7 @@ fun CompetitionDetailPage(
                 Tab(selected = selectedTab == 3, onClick = { selectedTab = 3; onTabChange(3) }, text = { Text("Результаты") })
             }
             when (selectedTab) {
-                0 -> InfoTab(detail = d)
+                0 -> InfoTab(detail = d, organizerClubName = organizerClubName)
                 1 -> GroupsTab(
                     detail = d,
                     isLoggedIn = isLoggedIn,
@@ -169,6 +182,7 @@ fun CompetitionDetailPage(
                     competitionId = competitionId,
                     groups = d.participantGroups,
                     competitionStatus = d.status,
+                    resultsStatus = d.resultsStatus,
                     direction = d.direction,
                     onParticipantClick = onParticipantClick,
                     onGroupSplitsClick = onGroupSplitsClick,
@@ -180,7 +194,9 @@ fun CompetitionDetailPage(
 }
 
 @Composable
-private fun InfoTab(detail: CompetitionDetail) {
+private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null) {
+    val registeredTotal = detail.participantGroups.sumOf { it.registeredCount }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -196,9 +212,12 @@ private fun InfoTab(detail: CompetitionDetail) {
         item {
             InfoRow("Статус", statusLabel(detail.status))
         }
+        organizerClubName?.let { item { InfoRow("Организатор", it) } }
         detail.registrationStart?.let { item { InfoRow("Регистрация с", it.toLocaleDateString()) } }
         detail.registrationEnd?.let { item { InfoRow("Регистрация до", it.toLocaleDateString()) } }
-        detail.maxParticipants?.let { item { InfoRow("Макс. участников", it.toString()) } }
+        detail.maxParticipants?.let { max ->
+            item { InfoRow("Участников", "$registeredTotal/$max") }
+        }
         detail.feeAmount?.takeIf { it > 0 }?.let { fee ->
             item {
                 InfoRow("Стартовый взнос", "${fee.toInt()} ${detail.feeCurrency ?: "руб."}")
@@ -206,6 +225,10 @@ private fun InfoTab(detail: CompetitionDetail) {
         }
         detail.contactEmail?.let { item { InfoRow("Email", it) } }
         detail.contactPhone?.let { item { InfoRow("Телефон", it) } }
+        val mapUrl = detail.mapUrl ?: detail.coordinates?.let { "https://maps.google.com/?q=${it.latitude},${it.longitude}" }
+        mapUrl?.let { item { LinkRow("Как добраться", it) } }
+        detail.regulationUrl?.let { item { LinkRow("Регламент соревнования", it) } }
+        detail.website?.let { item { LinkRow("Сайт", it) } }
         detail.description?.let { desc ->
             item {
                 Column {
@@ -225,6 +248,17 @@ private fun InfoRow(label: String, value: String) {
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun LinkRow(label: String, url: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { openExternalLink(url) },
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(url, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -326,6 +360,9 @@ private fun GroupCard(
                     group.distanceControlsCount?.let { n -> append(" · $n КП") }
                 }
                 Text(distInfo, style = MaterialTheme.typography.bodySmall)
+            }
+            group.distanceDescription?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (isLoggedIn && registrationOpen && !anyRegistered) {
                 val isFull = spotsLeft != null && spotsLeft <= 0

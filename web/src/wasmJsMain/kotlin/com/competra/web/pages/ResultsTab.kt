@@ -41,6 +41,7 @@ fun ResultsTab(
     competitionId: String,
     groups: List<ParticipantGroupDetail> = emptyList(),
     competitionStatus: String = "",
+    resultsStatus: String = "NOT_PUBLISHED",
     direction: String = "FORWARD",
     onParticipantClick: (String) -> Unit = {},
     onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
@@ -113,6 +114,16 @@ fun ResultsTab(
                     "● LIVE — обновляется автоматически",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+        }
+        if (resultsStatus == "PRELIMINARY") {
+            item {
+                Text(
+                    "Результаты предварительные",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp),
                 )
             }
