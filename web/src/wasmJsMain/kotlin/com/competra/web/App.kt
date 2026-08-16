@@ -53,7 +53,7 @@ import com.competra.web.theme.CompetiraTheme
 
 sealed class Page {
     data object Competitions : Page()
-    data class CompetitionDetail(val competitionId: String) : Page()
+    data class CompetitionDetail(val competitionId: String, val selectedTab: Int = 0) : Page()
     data object Management : Page()
     data object CreateCompetition : Page()
     data class ManageCompetition(val competition: OrienteeringCompetition) : Page()
@@ -61,9 +61,9 @@ sealed class Page {
     data object ProfileEditor : Page()
     data object About : Page()
     data object PrivacyPolicy : Page()
-    data class ParticipantSplits(val competitionId: String, val participantId: String) : Page()
-    data class GroupSplitsTable(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
-    data class RaceGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?) : Page()
+    data class ParticipantSplits(val competitionId: String, val participantId: String, val fromTab: Int = 0) : Page()
+    data class GroupSplitsTable(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?, val fromTab: Int = 0) : Page()
+    data class RaceGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?, val fromTab: Int = 0) : Page()
     data object Clubs : Page()
     data object CreateClub : Page()
     data class ClubDetail(val clubId: String) : Page()
@@ -98,35 +98,37 @@ fun App(initialPage: Page = Page.Competitions) {
         when (val current = page) {
             is Page.CompetitionDetail -> CompetitionDetailPage(
                 competitionId = current.competitionId,
+                initialTab = current.selectedTab,
                 onBack = { page = Page.Competitions },
+                onTabChange = { tab -> page = current.copy(selectedTab = tab) },
                 onParticipantClick = { participantId ->
-                    page = Page.ParticipantSplits(current.competitionId, participantId)
+                    page = Page.ParticipantSplits(current.competitionId, participantId, fromTab = current.selectedTab)
                 },
                 onGroupSplitsClick = { groupId, groupTitle, distanceId ->
-                    page = Page.GroupSplitsTable(current.competitionId, groupId, groupTitle, distanceId)
+                    page = Page.GroupSplitsTable(current.competitionId, groupId, groupTitle, distanceId, fromTab = current.selectedTab)
                 },
                 onRaceGraphClick = { groupId, groupTitle, distanceId ->
-                    page = Page.RaceGraph(current.competitionId, groupId, groupTitle, distanceId)
+                    page = Page.RaceGraph(current.competitionId, groupId, groupTitle, distanceId, fromTab = current.selectedTab)
                 },
             )
             is Page.ParticipantSplits -> ParticipantSplitsPage(
                 competitionId = current.competitionId,
                 participantId = current.participantId,
-                onBack = { page = Page.CompetitionDetail(current.competitionId) },
+                onBack = { page = Page.CompetitionDetail(current.competitionId, selectedTab = current.fromTab) },
             )
             is Page.GroupSplitsTable -> GroupSplitsTablePage(
                 competitionId = current.competitionId,
                 groupId = current.groupId,
                 groupTitle = current.groupTitle,
                 distanceId = current.distanceId,
-                onBack = { page = Page.CompetitionDetail(current.competitionId) },
+                onBack = { page = Page.CompetitionDetail(current.competitionId, selectedTab = current.fromTab) },
             )
             is Page.RaceGraph -> RaceGraphPage(
                 competitionId = current.competitionId,
                 groupId = current.groupId,
                 groupTitle = current.groupTitle,
                 distanceId = current.distanceId,
-                onBack = { page = Page.CompetitionDetail(current.competitionId) },
+                onBack = { page = Page.CompetitionDetail(current.competitionId, selectedTab = current.fromTab) },
             )
             is Page.CreateCompetition -> CreateCompetitionPage(
                 onBack = { page = Page.Management },

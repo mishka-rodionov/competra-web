@@ -55,6 +55,8 @@ import org.koin.compose.koinInject
 fun CompetitionDetailPage(
     competitionId: String,
     onBack: () -> Unit,
+    initialTab: Int = 0,
+    onTabChange: (Int) -> Unit = {},
     onParticipantClick: (String) -> Unit = {},
     onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
     onRaceGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
@@ -68,7 +70,7 @@ fun CompetitionDetailPage(
     var detail by remember { mutableStateOf<CompetitionDetail?>(null) }
     var profile by remember { mutableStateOf<UserProfile?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(initialTab) }
     var registeredGroupId by remember { mutableStateOf<Long?>(null) }
     var registerError by remember { mutableStateOf<String?>(null) }
     var showRegisterDialog by remember { mutableStateOf(false) }
@@ -137,10 +139,10 @@ fun CompetitionDetailPage(
 
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("О соревновании") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Группы") })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Дистанции") })
-                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Результаты") })
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0; onTabChange(0) }, text = { Text("О соревновании") })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1; onTabChange(1) }, text = { Text("Группы") })
+                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2; onTabChange(2) }, text = { Text("Дистанции") })
+                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3; onTabChange(3) }, text = { Text("Результаты") })
             }
             when (selectedTab) {
                 0 -> InfoTab(detail = d)
