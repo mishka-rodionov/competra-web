@@ -5,7 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateGroupRequest(
-    @SerialName("groupId")               val groupId: Long = 0,
+    /** null — создать новую группу; бэкенд (ParticipantGroupService.upsertAll) трактует
+     * ненулевое значение как id СУЩЕСТВУЮЩЕЙ строки для апдейта, без проверки владения
+     * соревнованием, поэтому здесь категорически нельзя подставлять заглушку вроде 0. */
+    @SerialName("groupId")               val groupId: Long? = null,
     @SerialName("competitionId")         val competitionId: String,
     @SerialName("title")                 val title: String,
     @SerialName("gender")                val gender: String? = null,

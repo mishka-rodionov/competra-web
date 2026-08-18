@@ -749,7 +749,7 @@ private fun AddGroupDialog(
                     scope.launch {
                         saving = true
                         val request = CreateGroupRequest(
-                            groupId = 0,
+                            groupId = null,
                             competitionId = competitionRemoteId,
                             title = title.trim(),
                             gender = selectedGender,

@@ -304,7 +304,7 @@ fun CreateCompetitionPage(
             if (groups.isNotEmpty()) {
                 val groupRequests = groups.map { g ->
                     CreateGroupRequest(
-                        groupId = 0,
+                        groupId = null,
                         competitionId = competitionId,
                         title = g.title,
                         minAge = g.minAge,
