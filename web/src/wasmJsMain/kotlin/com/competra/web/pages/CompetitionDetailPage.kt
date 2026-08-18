@@ -1,28 +1,47 @@
 package com.competra.web.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -38,6 +57,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.auth.TokenStorage
@@ -198,51 +219,202 @@ fun CompetitionDetailPage(
 @Composable
 private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null) {
     val registeredTotal = detail.participantGroups.sumOf { it.registeredCount }
+    val zone = detail.timeZoneId.takeIf { it.isNotBlank() } ?: DEFAULT_TIME_ZONE
+    val mapUrl = detail.mapUrl ?: detail.coordinates?.let { "https://maps.google.com/?q=${it.latitude},${it.longitude}" }
+    val organizerLine = buildOrganizerLine(organizerClubName, detail)
+    val hasRegistrationInfo = detail.registrationStart != null || detail.registrationEnd != null ||
+        detail.maxParticipants != null || (detail.feeAmount?.let { it > 0 } == true)
+    val hasOrganizerInfo = organizerLine != null || detail.contactEmail != null || detail.contactPhone != null
+    val hasLinks = mapUrl != null || detail.regulationUrl != null || detail.website != null
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            InfoRow("Дата начала", detail.startDate.toLocaleDateString())
-        }
-        detail.startTime?.let { time ->
-            val zone = detail.timeZoneId.takeIf { it.isNotBlank() } ?: DEFAULT_TIME_ZONE
-            item { InfoRow("Время старта", utcMillisToZonedTime(time, zone)) }
-        }
-        detail.endDate?.let { item { InfoRow("Дата окончания", it.toLocaleDateString()) } }
-        detail.address?.let { item { InfoRow("Место проведения", it) } }
-        item {
-            InfoRow("Вид спорта", sportLabel(detail.kindOfSport))
-        }
-        item {
-            InfoRow("Статус", statusLabel(detail.status))
-        }
-        buildOrganizerLine(organizerClubName, detail)?.let { item { InfoRow("Организатор", it) } }
-        detail.registrationStart?.let { item { InfoRow("Регистрация с", it.toLocaleDateString()) } }
-        detail.registrationEnd?.let { item { InfoRow("Регистрация до", it.toLocaleDateString()) } }
-        detail.maxParticipants?.let { max ->
-            item { InfoRow("Участников", "$registeredTotal/$max") }
-        }
-        detail.feeAmount?.takeIf { it > 0 }?.let { fee ->
-            item {
-                InfoRow("Стартовый взнос", "${fee.toInt()} ${detail.feeCurrency ?: "руб."}")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusChip(detail.status)
+                SportChip(detail.kindOfSport)
             }
         }
-        detail.contactEmail?.let { item { InfoRow("Email", it) } }
-        detail.contactPhone?.let { item { InfoRow("Телефон", it) } }
-        val mapUrl = detail.mapUrl ?: detail.coordinates?.let { "https://maps.google.com/?q=${it.latitude},${it.longitude}" }
-        mapUrl?.let { item { LinkRow("Как добраться", it) } }
-        detail.regulationUrl?.let { item { LinkRow("Регламент соревнования", it) } }
-        detail.website?.let { item { LinkRow("Сайт", it) } }
-        detail.description?.let { desc ->
+
+        item {
+            InfoSectionCard(icon = Icons.Filled.CalendarMonth, title = "Когда и где") {
+                Text(
+                    detail.startDate.toLocaleDateString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                detail.startTime?.let {
+                    Text(
+                        "Старт в ${utcMillisToZonedTime(it, zone)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                detail.endDate?.takeIf { it != detail.startDate }?.let {
+                    Text(
+                        "Окончание: ${it.toLocaleDateString()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                detail.address?.let { Field(icon = Icons.Filled.LocationOn, label = "Место проведения", value = it) }
+            }
+        }
+
+        if (hasRegistrationInfo) {
             item {
-                Column {
-                    Text("Описание", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(desc, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                InfoSectionCard(icon = Icons.Filled.Groups, title = "Регистрация") {
+                    registrationPeriodText(detail)?.let { Field(label = "Приём заявок", value = it) }
+                    detail.maxParticipants?.let { max -> ParticipantsProgress(registered = registeredTotal, max = max) }
+                    detail.feeAmount?.takeIf { it > 0 }?.let { fee ->
+                        Field(
+                            icon = Icons.Filled.Payments,
+                            label = "Стартовый взнос",
+                            value = "${fee.toInt()} ${detail.feeCurrency ?: "руб."}",
+                        )
+                    }
                 }
             }
         }
+
+        if (hasOrganizerInfo) {
+            item {
+                InfoSectionCard(icon = Icons.Filled.Person, title = "Организатор") {
+                    organizerLine?.let { Field(label = "Организатор", value = it) }
+                    detail.contactEmail?.let { LinkField(icon = Icons.Filled.Email, label = "Email", value = it, url = "mailto:$it") }
+                    detail.contactPhone?.let { LinkField(icon = Icons.Filled.Phone, label = "Телефон", value = it, url = "tel:$it") }
+                }
+            }
+        }
+
+        if (hasLinks) {
+            item {
+                InfoSectionCard(icon = Icons.Filled.Link, title = "Документы и ссылки") {
+                    mapUrl?.let { LinkField(icon = Icons.Filled.LocationOn, label = "Как добраться", value = "Открыть карту", url = it) }
+                    detail.regulationUrl?.let { LinkField(icon = Icons.Filled.Description, label = "Регламент соревнования", value = "Открыть", url = it) }
+                    detail.website?.let { LinkField(icon = Icons.Filled.Link, label = "Сайт организатора", value = it, url = it) }
+                }
+            }
+        }
+
+        detail.description?.takeIf { it.isNotBlank() }?.let { desc ->
+            item {
+                InfoSectionCard(icon = Icons.Filled.Description, title = "Описание") {
+                    Text(desc, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
+private fun registrationPeriodText(detail: CompetitionDetail): String? {
+    val start = detail.registrationStart?.toLocaleDateString()
+    val end = detail.registrationEnd?.toLocaleDateString()
+    return when {
+        start != null && end != null -> "$start – $end"
+        start != null -> "с $start"
+        end != null -> "до $end"
+        else -> null
+    }
+}
+
+@Composable
+private fun StatusChip(status: String) {
+    val color = statusColor(status)
+    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
+            Text(statusLabel(status), style = MaterialTheme.typography.labelMedium, color = color)
+        }
+    }
+}
+
+@Composable
+private fun SportChip(kind: String) {
+    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Text(
+            sportLabel(kind),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun InfoSectionCard(icon: ImageVector, title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun Field(label: String, value: String, icon: ImageVector? = null) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+        icon?.let { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun LinkField(label: String, value: String, url: String, icon: ImageVector? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { openExternalLink(url) },
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon?.let { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.OpenInNew,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+@Composable
+private fun ParticipantsProgress(registered: Int, max: Int) {
+    val fraction = if (max > 0) (registered.toFloat() / max).coerceIn(0f, 1f) else 0f
+    val isFull = registered >= max
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Участников", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "$registered из $max",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isFull) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        LinearProgressIndicator(
+            progress = { fraction },
+            modifier = Modifier.fillMaxWidth().height(6.dp),
+            color = if (isFull) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
     }
 }
 
@@ -257,28 +429,6 @@ private fun buildOrganizerLine(organizerClubName: String?, detail: CompetitionDe
 
     val parts = listOfNotNull(organizerClubName, personalName.takeIf { it.isNotBlank() })
     return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-private fun LinkRow(label: String, url: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable { openExternalLink(url) },
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(url, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-    }
 }
 
 @Composable
@@ -346,7 +496,11 @@ private fun GroupCard(
 ) {
     val spotsLeft = group.maxParticipants?.minus(group.registeredCount)
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

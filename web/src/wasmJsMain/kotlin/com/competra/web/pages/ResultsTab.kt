@@ -1,5 +1,6 @@
 package com.competra.web.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,12 +8,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.repository.ResultRepository
@@ -106,69 +114,92 @@ fun ResultsTab(
     val resultsByGroup = results.groupBy { it.groupId }
     val sortedGroupIds = (groupOrder + resultsByGroup.keys.filter { it !in groupOrder }).distinct()
     val groupNamesById = groups.associate { it.groupId to it.title }
+    val nonEmptyGroupIds = sortedGroupIds.filter { (resultsByGroup[it] ?: emptyList()).isNotEmpty() }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        if (competitionStatus in LIVE_STATUSES) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (competitionStatus in LIVE_STATUSES || resultsStatus == "PRELIMINARY") {
             item {
-                Text(
-                    "● LIVE — обновляется автоматически",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (competitionStatus in LIVE_STATUSES) LiveBadge()
+                    if (resultsStatus == "PRELIMINARY") PreliminaryBadge()
+                }
             }
         }
-        if (resultsStatus == "PRELIMINARY") {
-            item {
-                Text(
-                    "Результаты предварительные",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-            }
-        }
-        sortedGroupIds.forEach { groupId ->
+        items(nonEmptyGroupIds) { groupId ->
             val groupResults = (resultsByGroup[groupId] ?: emptyList())
                 .sortedWith(compareBy(nullsLast()) { it.rank })
-            if (groupResults.isEmpty()) return@forEach
             val groupTitle = groupNamesById[groupId] ?: "Группа $groupId"
             val distanceId = groups.firstOrNull { it.groupId == groupId }?.distanceId
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(groupTitle, style = MaterialTheme.typography.titleSmall)
-                    if (!isByChoice) {
-                        Row {
-                            TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
-                            TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
-                        }
+            GroupResultsCard(
+                groupId = groupId,
+                groupTitle = groupTitle,
+                distanceId = distanceId,
+                groupResults = groupResults,
+                isByChoice = isByChoice,
+                participantsById = participantsById,
+                onParticipantClick = onParticipantClick,
+                onGroupSplitsClick = onGroupSplitsClick,
+                onRaceGraphClick = onRaceGraphClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GroupResultsCard(
+    groupId: Long,
+    groupTitle: String,
+    distanceId: Long?,
+    groupResults: List<OrienteeringResult>,
+    isByChoice: Boolean,
+    participantsById: Map<String, OrienteeringParticipant>,
+    onParticipantClick: (String) -> Unit,
+    onGroupSplitsClick: (Long, String, Long?) -> Unit,
+    onRaceGraphClick: (Long, String, Long?) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(groupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                if (!isByChoice) {
+                    Row {
+                        TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
+                        TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
                     }
                 }
-                HorizontalDivider()
             }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text("#", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.4f))
-                    Text("Участник", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(if (isByChoice) 1.6f else 2f))
-                    if (isByChoice) {
-                        Text("Очки", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.7f))
-                    }
-                    Text("Время", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
-                    Text("Статус", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+            HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("#", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(0.4f))
+                Text(
+                    "Участник",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(if (isByChoice) 1.6f else 2f),
+                )
+                if (isByChoice) {
+                    Text("Очки", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(0.7f))
                 }
-                HorizontalDivider()
+                Text("Время", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text("Статус", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             }
-
-            items(groupResults) { result ->
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            groupResults.forEach { result ->
                 val participant = participantsById[result.participantId]
                 ResultRow(
                     result = result,
@@ -179,6 +210,36 @@ fun ResultsTab(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
+    }
+}
+
+@Composable
+private fun LiveBadge() {
+    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.errorContainer) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(modifier = Modifier.size(8.dp).background(MaterialTheme.colorScheme.error, CircleShape))
+            Text(
+                "LIVE — обновляется автоматически",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreliminaryBadge() {
+    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+        Text(
+            "Результаты предварительные",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        )
     }
 }
 

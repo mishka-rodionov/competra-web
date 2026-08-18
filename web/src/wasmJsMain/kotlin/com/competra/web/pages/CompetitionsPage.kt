@@ -451,9 +451,8 @@ private fun MyCompetitionCard(competition: OrienteeringCompetition, onClick: () 
 @Composable
 internal fun statusColor(status: String) = when (status) {
     "REGISTRATION_OPEN" -> MaterialTheme.colorScheme.primary
-    "REGISTRATION_CLOSED" -> MaterialTheme.colorScheme.secondary
-    "IN_PROGRESS", "STARTED" -> MaterialTheme.colorScheme.tertiary
-    "FINISHED" -> MaterialTheme.colorScheme.onSurfaceVariant
+    "IN_PROGRESS", "STARTED" -> MaterialTheme.colorScheme.secondary
+    "FINISHED" -> MaterialTheme.colorScheme.outline
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
