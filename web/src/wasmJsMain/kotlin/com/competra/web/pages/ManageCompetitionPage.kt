@@ -57,10 +57,10 @@ import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.OrienteeringParticipant
 import com.competra.domain.models.OrienteeringResult
 import com.competra.domain.models.ParticipantGroupDetail
+import com.competra.web.components.CoordinatesPickerField
 import com.competra.web.components.DateField
 import com.competra.web.components.ImportResultsPreviewDialog
 import com.competra.web.components.LabeledDropdown
-import com.competra.web.components.MapPickerField
 import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
@@ -229,7 +229,7 @@ private fun EditTab(competition: OrienteeringCompetition) {
 
         item { Text("Координаты старта на карте", style = MaterialTheme.typography.labelLarge) }
         item {
-            MapPickerField(
+            CoordinatesPickerField(
                 latitude = latitude,
                 longitude = longitude,
                 onPick = { lat, lon -> latitude = lat; longitude = lon },

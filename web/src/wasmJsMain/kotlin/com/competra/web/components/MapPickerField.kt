@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +31,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.competra.web.utils.OSM_TILE_SIZE
 import com.competra.web.utils.latToTileY
 import com.competra.web.utils.loadTileBitmap
@@ -157,6 +160,48 @@ fun MapPickerField(
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
         ) {
             Text("Зафиксировать координаты старта")
+        }
+    }
+}
+
+/**
+ * Поле координат для форм-визардов: показывает текущее значение и кнопку, открывающую
+ * [MapPickerField] в [Dialog]. [MapPickerField] рисует тайлы на [Canvas] и внутри скроллящегося
+ * списка (LazyColumn/Column.verticalScroll) на wasmJs-таргете съезжает с места при скролле —
+ * Canvas там не переезжает вместе с остальным контентом. Диалог не скроллится, поэтому проблема
+ * не проявляется.
+ */
+@Composable
+fun CoordinatesPickerField(
+    latitude: Double?,
+    longitude: Double?,
+    onPick: (latitude: Double, longitude: Double) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        Text(
+            if (latitude != null && longitude != null) "${formatCoord(latitude)}, ${formatCoord(longitude)}" else "Не указаны",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        OutlinedButton(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            Text(if (latitude != null) "Изменить на карте" else "Выбрать на карте")
+        }
+    }
+
+    if (showPicker) {
+        Dialog(onDismissRequest = { showPicker = false }) {
+            Surface(shape = MaterialTheme.shapes.medium) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    MapPickerField(
+                        latitude = latitude,
+                        longitude = longitude,
+                        onPick = { lat, lon -> onPick(lat, lon); showPicker = false },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
     }
 }

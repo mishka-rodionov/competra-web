@@ -54,9 +54,9 @@ import com.competra.domain.models.CreateGroupRequest
 import com.competra.domain.models.Distance
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.SaveDistanceRequest
+import com.competra.web.components.CoordinatesPickerField
 import com.competra.web.components.DateField
 import com.competra.web.components.LabeledDropdown
-import com.competra.web.components.MapPickerField
 import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
@@ -80,6 +80,33 @@ private data class PendingDistance(
     val finishControlPoint: Int?,
     val description: String?,
 )
+
+/**
+ * Превью дистанции из импортируемого IOF XML — только для отображения и выбора в группах.
+ * Реальный парсинг (с координатами КП) делает сервер при публикации ([DistanceRepository.importFromXml]);
+ * до тех пор, пока соревнование не создано, у сервера нет competitionId для импорта, поэтому здесь
+ * читаем из XML только имя/длину/число КП, разбирая текст файла регулярным выражением.
+ */
+private data class XmlCoursePreview(
+    val name: String,
+    val lengthMeters: Int,
+    val controlsCount: Int,
+)
+
+private val XML_COURSE_REGEX = Regex("<Course>(.*?)</Course>", RegexOption.DOT_MATCHES_ALL)
+private val XML_NAME_REGEX = Regex("<Name>(.*?)</Name>", RegexOption.DOT_MATCHES_ALL)
+private val XML_LENGTH_REGEX = Regex("<Length>(.*?)</Length>", RegexOption.DOT_MATCHES_ALL)
+private val XML_COURSE_CONTROL_REGEX = Regex("<CourseControl\\b")
+
+private fun parseXmlCoursePreviews(xmlContent: String): List<XmlCoursePreview> =
+    XML_COURSE_REGEX.findAll(xmlContent).map { match ->
+        val block = match.groupValues[1]
+        XmlCoursePreview(
+            name = XML_NAME_REGEX.find(block)?.groupValues?.get(1)?.trim().takeUnless { it.isNullOrBlank() } ?: "Без названия",
+            lengthMeters = XML_LENGTH_REGEX.find(block)?.groupValues?.get(1)?.trim()?.toIntOrNull() ?: 0,
+            controlsCount = XML_COURSE_CONTROL_REGEX.findAll(block).count(),
+        )
+    }.toList()
 
 /** Локальная группа, ссылается на дистанцию по индексу в списке шага «Дистанции». */
 private data class PendingGroup(
@@ -161,6 +188,15 @@ fun CreateCompetitionPage(
     var showGroupDialog by remember { mutableStateOf(false) }
     var importXmlBytes by remember { mutableStateOf<ByteArray?>(null) }
     var importXmlName by remember { mutableStateOf<String?>(null) }
+    var importedPreviews by remember { mutableStateOf<List<XmlCoursePreview>>(emptyList()) }
+
+    // Объединённый список дистанций для выбора в группах: сначала введённые вручную, затем
+    // превью из импортируемого XML — тот же порядок, в котором publish() свяжет группы с
+    // реальными id (savedManualDistances, затем результат importFromXml).
+    val distanceOptions = buildList {
+        distances.forEachIndexed { i, d -> add(i to (d.name ?: "Дистанция ${i + 1}")) }
+        importedPreviews.forEachIndexed { i, p -> add((distances.size + i) to p.name) }
+    }
 
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -232,7 +268,7 @@ fun CreateCompetitionPage(
             }
 
             // Дистанции: ответ приходит в порядке запроса -> сопоставляем по индексу.
-            var savedDistances: List<Distance> = emptyList()
+            var savedManualDistances: List<Distance> = emptyList()
             if (distances.isNotEmpty()) {
                 val distRequests = distances.map { d ->
                     SaveDistanceRequest(
@@ -248,18 +284,22 @@ fun CreateCompetitionPage(
                     )
                 }
                 when (val dr = distanceRepo.saveDistances(distRequests)) {
-                    is ApiResult.Success -> savedDistances = dr.data
+                    is ApiResult.Success -> savedManualDistances = dr.data
                     is ApiResult.Error -> { error = "Дистанции: ${dr.message}"; saving = false; return@launch }
                 }
             }
 
-            // Импорт дистанций из IOF XML файла (сервер парсит файл сам).
+            // Импорт дистанций из IOF XML файла (сервер парсит файл сам и возвращает реальные id —
+            // в том же порядке, что и Course-элементы в файле, поэтому индексы из distanceOptions
+            // (distances.size + i) совпадают с позицией в этом списке).
+            var importedDistances: List<Distance> = emptyList()
             importXmlBytes?.let { xmlBytes ->
                 when (val ir = distanceRepo.importFromXml(competitionId, xmlBytes)) {
-                    is ApiResult.Success -> {}
+                    is ApiResult.Success -> importedDistances = ir.data
                     is ApiResult.Error -> { error = "Импорт XML: ${ir.message}"; saving = false; return@launch }
                 }
             }
+            val savedDistances = savedManualDistances + importedDistances
 
             if (groups.isNotEmpty()) {
                 val groupRequests = groups.map { g ->
@@ -398,17 +438,19 @@ fun CreateCompetitionPage(
                 3 -> distancesStep(
                     distances = distances,
                     importXmlName = importXmlName,
+                    importedPreviews = importedPreviews,
                     onAdd = { showDistanceDialog = true },
                     onRemove = { idx -> distances = distances.filterIndexed { i, _ -> i != idx } },
                     onPickXml = {
                         pickXmlFile { name, content ->
                             importXmlName = name
                             importXmlBytes = content.encodeToByteArray()
+                            importedPreviews = parseXmlCoursePreviews(content)
                         }
                     },
-                    onClearXml = { importXmlName = null; importXmlBytes = null },
+                    onClearXml = { importXmlName = null; importXmlBytes = null; importedPreviews = emptyList() },
                 )
-                4 -> groupsStep(groups = groups, distances = distances, onAdd = { showGroupDialog = true }, onRemove = { idx -> groups = groups.filterIndexed { i, _ -> i != idx } })
+                4 -> groupsStep(groups = groups, distanceOptions = distanceOptions, onAdd = { showGroupDialog = true }, onRemove = { idx -> groups = groups.filterIndexed { i, _ -> i != idx } })
             }
 
             error?.let { err ->
@@ -426,7 +468,7 @@ fun CreateCompetitionPage(
     }
     if (showGroupDialog) {
         GroupDialog(
-            distances = distances,
+            distanceOptions = distanceOptions,
             isByChoice = direction == "BY_CHOICE",
             onDismiss = { showGroupDialog = false },
             onSave = { groups = groups + it; showGroupDialog = false },
@@ -539,7 +581,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.basicStep(
         Text("Координаты старта на карте", style = MaterialTheme.typography.labelLarge)
     }
     item {
-        MapPickerField(
+        CoordinatesPickerField(
             latitude = latitude,
             longitude = longitude,
             onPick = onCoordinates,
@@ -675,6 +717,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.organizerStep(
 private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
     distances: List<PendingDistance>,
     importXmlName: String?,
+    importedPreviews: List<XmlCoursePreview>,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
     onPickXml: () -> Unit,
@@ -712,12 +755,26 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
                             Text("Убрать", color = MaterialTheme.colorScheme.error)
                         }
                     }
+                    if (importedPreviews.isEmpty()) {
+                        Text(
+                            "В файле не найдено ни одной дистанции (Course).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        importedPreviews.forEach { p ->
+                            Text(
+                                "${p.name} — ${p.lengthMeters} м, КП: ${p.controlsCount}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                 }
             }
         }
     }
     if (distances.isEmpty()) {
-        item { Text("Пока нет дистанций", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { Text("Пока нет дистанций, добавленных вручную", color = MaterialTheme.colorScheme.onSurfaceVariant) }
     } else {
         distances.forEachIndexed { index, d ->
             item {
@@ -751,7 +808,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.groupsStep(
     groups: List<PendingGroup>,
-    distances: List<PendingDistance>,
+    distanceOptions: List<Pair<Int, String>>,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
 ) {
@@ -769,7 +826,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.groupsStep(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(g.title, fontWeight = FontWeight.Bold)
-                            val distName = distances.getOrNull(g.distanceIndex)?.name ?: "—"
+                            val distName = distanceOptions.firstOrNull { it.first == g.distanceIndex }?.second ?: "—"
                             val ageStr = if (g.minAge != null || g.maxAge != null) "${g.minAge ?: ""}–${g.maxAge ?: ""} лет  •  " else ""
                             Text("${ageStr}Дистанция: $distName", style = MaterialTheme.typography.bodySmall)
                         }
@@ -864,7 +921,7 @@ private fun DistanceDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupDialog(
-    distances: List<PendingDistance>,
+    distanceOptions: List<Pair<Int, String>>,
     isByChoice: Boolean,
     onDismiss: () -> Unit,
     onSave: (PendingGroup) -> Unit,
@@ -873,7 +930,7 @@ private fun GroupDialog(
     var minAge by remember { mutableStateOf("") }
     var maxAge by remember { mutableStateOf("") }
     var maxParticipants by remember { mutableStateOf("") }
-    var distanceIndex by remember { mutableIntStateOf(0) }
+    var distanceIndex by remember { mutableIntStateOf(distanceOptions.firstOrNull()?.first ?: 0) }
     var timeLimitMinutes by remember { mutableStateOf("60") }
     var scorePenaltyPerMinute by remember { mutableStateOf("1") }
     var maxLatenessMinutes by remember { mutableStateOf("30") }
@@ -922,12 +979,12 @@ private fun GroupDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
                 }
-                if (distances.isEmpty()) {
+                if (distanceOptions.isEmpty()) {
                     Text("Сначала добавьте дистанцию", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 } else {
                     LabeledDropdown(
                         "Дистанция *", distanceIndex,
-                        distances.mapIndexed { i, d -> i to (d.name ?: "Дистанция ${i + 1}") },
+                        distanceOptions,
                         Modifier.fillMaxWidth(),
                     ) { distanceIndex = it }
                 }
@@ -936,7 +993,7 @@ private fun GroupDialog(
         },
         confirmButton = {
             Button(
-                enabled = distances.isNotEmpty(),
+                enabled = distanceOptions.isNotEmpty(),
                 onClick = {
                     if (title.isBlank()) { error = "Укажите название"; return@Button }
                     onSave(
