@@ -48,8 +48,10 @@ import com.competra.domain.models.CompetitionDetail
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.domain.models.RegisterEventRequest
 import com.competra.domain.models.UserProfile
+import com.competra.web.utils.DEFAULT_TIME_ZONE
 import com.competra.web.utils.openExternalLink
 import com.competra.web.utils.toLocaleDateString
+import com.competra.web.utils.utcMillisToZonedTime
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -204,6 +206,10 @@ private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null
         item {
             InfoRow("Дата начала", detail.startDate.toLocaleDateString())
         }
+        detail.startTime?.let { time ->
+            val zone = detail.timeZoneId.takeIf { it.isNotBlank() } ?: DEFAULT_TIME_ZONE
+            item { InfoRow("Время старта", utcMillisToZonedTime(time, zone)) }
+        }
         detail.endDate?.let { item { InfoRow("Дата окончания", it.toLocaleDateString()) } }
         detail.address?.let { item { InfoRow("Место проведения", it) } }
         item {
@@ -212,7 +218,7 @@ private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null
         item {
             InfoRow("Статус", statusLabel(detail.status))
         }
-        organizerClubName?.let { item { InfoRow("Организатор", it) } }
+        buildOrganizerLine(organizerClubName, detail)?.let { item { InfoRow("Организатор", it) } }
         detail.registrationStart?.let { item { InfoRow("Регистрация с", it.toLocaleDateString()) } }
         detail.registrationEnd?.let { item { InfoRow("Регистрация до", it.toLocaleDateString()) } }
         detail.maxParticipants?.let { max ->
@@ -238,6 +244,19 @@ private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null
             }
         }
     }
+}
+
+/**
+ * Строка организатора: название клуба и/или ФИО контактного лица.
+ * Формат: "Клуб · Фамилия Имя Отчество" — части, которых нет, опускаются.
+ */
+private fun buildOrganizerLine(organizerClubName: String?, detail: CompetitionDetail): String? {
+    val personalName = listOfNotNull(detail.organizerLastName, detail.organizerFirstName, detail.organizerMiddleName)
+        .filter { it.isNotBlank() }
+        .joinToString(" ")
+
+    val parts = listOfNotNull(organizerClubName, personalName.takeIf { it.isNotBlank() })
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
 @Composable
