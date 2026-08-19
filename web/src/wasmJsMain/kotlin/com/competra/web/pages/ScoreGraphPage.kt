@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
+import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.ResultRepository
 import com.competra.domain.models.ScoreGraphData
@@ -57,6 +58,7 @@ fun ScoreGraphPage(
 ) {
     val resultRepo: ResultRepository = koinInject()
     val distanceRepo: DistanceRepository = koinInject()
+    val competitionRepo: CompetitionRepository = koinInject()
 
     var data by remember { mutableStateOf<ScoreGraphData?>(null) }
     var loading by remember { mutableStateOf(true) }
@@ -67,13 +69,16 @@ fun ScoreGraphPage(
         val rParticipants = resultRepo.getParticipants(competitionId)
         val rResults = resultRepo.getResults(competitionId)
         val rDistances = distanceRepo.getByCompetition(competitionId)
+        val rDetail = competitionRepo.getCompetitionDetail(competitionId)
 
         val participants = (rParticipants as? ApiResult.Success)?.data?.filter { it.groupId == groupId } ?: emptyList()
         val results = (rResults as? ApiResult.Success)?.data ?: emptyList()
         val distance = (rDistances as? ApiResult.Success)?.data?.firstOrNull { it.id == distanceId }
+        val timeLimitMinutes = (rDetail as? ApiResult.Success)?.data?.participantGroups
+            ?.firstOrNull { it.groupId == groupId }?.timeLimitMinutes
 
         val sortedParticipants = sortedForResults(participants, results, "BY_CHOICE")
-        val graphData = buildScoreGraphData(sortedParticipants, results, distance)
+        val graphData = buildScoreGraphData(sortedParticipants, results, distance, timeLimitMinutes)
         data = graphData
         visibleIds = graphData.series
             .sortedBy { it.result?.rank ?: Int.MAX_VALUE }
