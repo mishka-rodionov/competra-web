@@ -173,9 +173,11 @@ private fun GroupResultsCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(groupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                if (!isByChoice) {
-                    Row {
-                        TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
+                Row {
+                    TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
+                    // График отставания от лидера по кумулятивному времени не имеет смысла для
+                    // BY_CHOICE — у каждого участника свой набор и порядок КП, сравнивать нечего.
+                    if (!isByChoice) {
                         TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
                     }
                 }
@@ -254,8 +256,9 @@ private fun ResultRow(
     val timeStr = result.totalTime?.let { formatTime(it) } ?: "—"
     val statusStr = resultStatusLabel(result.status)
 
-    // Переходы к сплитам/графику скрыты для BY_CHOICE (порядок КП не регламентирован) —
-    // строка результата тоже не кликабельна, кликать там больше некуда.
+    // Переход к сплитам ОДНОГО участника для BY_CHOICE не имеет смысла (порядок КП не
+    // регламентирован) — строка результата не кликабельна. Групповая таблица сплитов
+    // (кнопка «Сплиты» в GroupResultsCard) при этом доступна — там свой формат для BY_CHOICE.
     val rowModifier = if (isByChoice) {
         Modifier.fillMaxWidth().padding(vertical = 6.dp)
     } else {

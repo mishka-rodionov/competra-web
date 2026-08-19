@@ -73,6 +73,8 @@ data class OrienteeringResult(
     @SerialName("penaltyTime")   val penaltyTime: Long = 0,
     @SerialName("splits")        val splits: List<SplitTime>? = null,
     @SerialName("totalScore")    val totalScore: Int? = null,
+    /** Штраф в очках за опоздание сверх лимита (BY_CHOICE), уже вычтен из totalScore. */
+    @SerialName("scorePenalty") val scorePenalty: Int = 0,
     @SerialName("isEditable")    val isEditable: Boolean = true,
     @SerialName("isEdited")      val isEdited: Boolean = false,
 )

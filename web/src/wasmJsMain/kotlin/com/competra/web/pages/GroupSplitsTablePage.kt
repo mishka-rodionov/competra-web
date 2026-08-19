@@ -36,9 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
+import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.DistanceRepository
 import com.competra.data.repository.ResultRepository
 import com.competra.domain.models.SplitsTable
+import com.competra.domain.models.SplitsTableRow
 import com.competra.domain.models.buildSplitsTable
 import com.competra.domain.models.sortedForResults
 import com.competra.web.utils.formatTime
@@ -58,8 +60,10 @@ fun GroupSplitsTablePage(
 ) {
     val resultRepo: ResultRepository = koinInject()
     val distanceRepo: DistanceRepository = koinInject()
+    val competitionRepo: CompetitionRepository = koinInject()
 
     var table by remember { mutableStateOf<SplitsTable?>(null) }
+    var isByChoice by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -67,16 +71,19 @@ fun GroupSplitsTablePage(
         val rParticipants = resultRepo.getParticipants(competitionId)
         val rResults = resultRepo.getResults(competitionId)
         val rDistances = distanceRepo.getByCompetition(competitionId)
+        val rDetail = competitionRepo.getCompetitionDetail(competitionId)
 
         val participants = (rParticipants as? ApiResult.Success)?.data?.filter { it.groupId == groupId } ?: emptyList()
         val results = (rResults as? ApiResult.Success)?.data ?: emptyList()
         val distance = (rDistances as? ApiResult.Success)?.data?.firstOrNull { it.id == distanceId }
+        val direction = (rDetail as? ApiResult.Success)?.data?.direction ?: "FORWARD"
 
         if (rParticipants is ApiResult.Error) error = rParticipants.message
         else if (rResults is ApiResult.Error) error = rResults.message
 
-        val sortedParticipants = sortedForResults(participants, results)
-        table = buildSplitsTable(sortedParticipants, results, distance)
+        isByChoice = direction == "BY_CHOICE"
+        val sortedParticipants = sortedForResults(participants, results, direction)
+        table = buildSplitsTable(sortedParticipants, results, distance, direction)
         loading = false
     }
 
@@ -116,7 +123,7 @@ fun GroupSplitsTablePage(
                     t.columns.forEach { column ->
                         Box(modifier = Modifier.width(SPLIT_COLUMN_WIDTH), contentAlignment = Alignment.Center) {
                             Text(
-                                "#${column.positionIndex} (КП${column.controlPoint})",
+                                if (isByChoice) "#${column.positionIndex}" else "#${column.positionIndex} (КП${column.controlPoint})",
                                 style = MaterialTheme.typography.labelSmall,
                                 textAlign = TextAlign.Center,
                             )
@@ -138,6 +145,13 @@ fun GroupSplitsTablePage(
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 2,
                             )
+                            if (isByChoice) {
+                                Text(
+                                    scoreLabel(row),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             row.result?.rank?.let {
                                 Text("Место $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -148,6 +162,15 @@ fun GroupSplitsTablePage(
                                     modifier = Modifier.width(SPLIT_COLUMN_WIDTH).padding(horizontal = 4.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
+                                    if (isByChoice) {
+                                        cell.controlPoint?.let {
+                                            Text(
+                                                "КП$it",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
                                     Text(
                                         cell.cumulativeSeconds?.let { formatTime(it) } ?: "—",
                                         style = MaterialTheme.typography.labelSmall,
@@ -159,12 +182,14 @@ fun GroupSplitsTablePage(
                                         fontWeight = if (cell.isBestLeg) FontWeight.Bold else FontWeight.Normal,
                                         color = if (cell.isBestLeg) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                     )
-                                    cell.paceMinPerKm?.let {
-                                        Text(
-                                            "${formatPace(it)}/км",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
+                                    if (!isByChoice) {
+                                        cell.paceMinPerKm?.let {
+                                            Text(
+                                                "${formatPace(it)}/км",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -175,6 +200,13 @@ fun GroupSplitsTablePage(
             }
         }
     }
+}
+
+private fun scoreLabel(row: SplitsTableRow): String {
+    val netScore = row.result?.totalScore ?: 0
+    val penalty = row.result?.scorePenalty ?: 0
+    val rawScore = row.rawScore ?: (netScore + penalty)
+    return if (penalty > 0) "$rawScore - $penalty (штраф) = $netScore" else "$netScore очков"
 }
 
 private fun formatPace(minPerKm: Double): String {
