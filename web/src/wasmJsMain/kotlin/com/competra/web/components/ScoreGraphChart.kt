@@ -78,10 +78,12 @@ fun ScoreGraphChart(
         drawText(textMeasurer, "0", Offset(0f, size.height - bottomPad - 12f), labelStyle)
         drawText(textMeasurer, "0:00", Offset(leftPad, size.height - bottomPad + 4f), labelStyle)
         if (maxElapsedSeconds > 0) {
+            val maxLabel = formatTime(maxElapsedSeconds)
+            val maxLabelWidth = textMeasurer.measure(maxLabel, labelStyle).size.width
             drawText(
                 textMeasurer,
-                formatTime(maxElapsedSeconds),
-                Offset(size.width - 36f, size.height - bottomPad + 4f),
+                maxLabel,
+                Offset(size.width - maxLabelWidth, size.height - bottomPad + 4f),
                 labelStyle,
             )
         }
