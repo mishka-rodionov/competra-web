@@ -45,6 +45,7 @@ import com.competra.web.pages.RaceGraphPage
 import com.competra.web.pages.RatingDetailPage
 import com.competra.web.pages.RatingFormPage
 import com.competra.web.pages.RatingsSearchPage
+import com.competra.web.pages.ScoreGraphPage
 import com.competra.web.pages.TeamDetailPage
 import com.competra.web.pages.WorkoutDetailPage
 import com.competra.web.pages.WorkoutEditorPage
@@ -64,6 +65,7 @@ sealed class Page {
     data class ParticipantSplits(val competitionId: String, val participantId: String, val fromTab: Int = 0) : Page()
     data class GroupSplitsTable(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?, val fromTab: Int = 0) : Page()
     data class RaceGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?, val fromTab: Int = 0) : Page()
+    data class ScoreGraph(val competitionId: String, val groupId: Long, val groupTitle: String, val distanceId: Long?, val fromTab: Int = 0) : Page()
     data object Clubs : Page()
     data object CreateClub : Page()
     data class ClubDetail(val clubId: String) : Page()
@@ -110,6 +112,9 @@ fun App(initialPage: Page = Page.Competitions) {
                 onRaceGraphClick = { groupId, groupTitle, distanceId ->
                     page = Page.RaceGraph(current.competitionId, groupId, groupTitle, distanceId, fromTab = current.selectedTab)
                 },
+                onScoreGraphClick = { groupId, groupTitle, distanceId ->
+                    page = Page.ScoreGraph(current.competitionId, groupId, groupTitle, distanceId, fromTab = current.selectedTab)
+                },
             )
             is Page.ParticipantSplits -> ParticipantSplitsPage(
                 competitionId = current.competitionId,
@@ -124,6 +129,13 @@ fun App(initialPage: Page = Page.Competitions) {
                 onBack = { page = Page.CompetitionDetail(current.competitionId, selectedTab = current.fromTab) },
             )
             is Page.RaceGraph -> RaceGraphPage(
+                competitionId = current.competitionId,
+                groupId = current.groupId,
+                groupTitle = current.groupTitle,
+                distanceId = current.distanceId,
+                onBack = { page = Page.CompetitionDetail(current.competitionId, selectedTab = current.fromTab) },
+            )
+            is Page.ScoreGraph -> ScoreGraphPage(
                 competitionId = current.competitionId,
                 groupId = current.groupId,
                 groupTitle = current.groupTitle,

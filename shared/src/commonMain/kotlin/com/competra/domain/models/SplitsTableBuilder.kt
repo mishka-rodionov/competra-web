@@ -64,6 +64,23 @@ data class RaceGraphData(
     val series: List<RaceGraphSeries>,
 )
 
+/** Точка графика набора очков (BY_CHOICE): момент времени от старта и накопленные очки на этот момент. */
+data class ScoreGraphPoint(
+    val elapsedSeconds: Long,
+    val cumulativeScore: Int,
+)
+
+/** Кривая набора очков во времени для одного участника (BY_CHOICE). */
+data class ScoreGraphSeries(
+    val participant: OrienteeringParticipant,
+    val result: OrienteeringResult?,
+    val points: List<ScoreGraphPoint>,
+)
+
+data class ScoreGraphData(
+    val series: List<ScoreGraphSeries>,
+)
+
 private const val EARTH_RADIUS_METERS = 6_371_000.0
 
 /** Расстояние между двумя КП по WGS84 (haversine), в метрах. Null, если у одного из КП нет координат. */
@@ -328,4 +345,44 @@ fun buildRaceGraphData(table: SplitsTable): RaceGraphData {
     }
 
     return RaceGraphData(columns = table.columns, series = series)
+}
+
+/**
+ * Строит данные графика набора очков во времени для BY_CHOICE (score-О): по оси времени —
+ * секунды от старта участника, по оси очков — сумма очков за фактически взятые КП (сырая, ДО
+ * вычета штрафа за опоздание — штраф не непрерывная функция времени, а разовое списание по
+ * итогу, поэтому в кривую его включать не нужно; итоговое место/очки видны в легенде).
+ * Каждая отметка добавляет точку — наклон отрезка между соседними точками показывает темп
+ * набора очков на этом отрезке. Если участник финишировал позже последней отметки — добавляется
+ * финальная плоская точка на totalTime, чтобы линия доходила до конца гонки.
+ * Не финишировавшие исключаются — их кривая до конца не имеет смысла сравнивать.
+ */
+fun buildScoreGraphData(
+    participants: List<OrienteeringParticipant>,
+    results: List<OrienteeringResult>,
+    distance: Distance? = null,
+): ScoreGraphData {
+    val scoreByNumber = distance?.controlPoints?.associate { it.number to it.score } ?: emptyMap()
+    val resultByParticipantId = results.associateBy { it.participantId }
+
+    val series = participants.mapNotNull { participant ->
+        val result = resultByParticipantId[participant.id] ?: return@mapNotNull null
+        if (result.status != "FINISHED") return@mapNotNull null
+        val startTs = anchorStartTime(participant, result) ?: return@mapNotNull null
+
+        val points = mutableListOf(ScoreGraphPoint(0L, 0))
+        var cumulative = 0
+        result.splits?.forEach { split ->
+            cumulative += scoreByNumber[split.controlPoint] ?: 0
+            points += ScoreGraphPoint((split.timestamp - startTs) / 1000L, cumulative)
+        }
+        val finishSeconds = result.totalTime
+        if (finishSeconds != null && finishSeconds > points.last().elapsedSeconds) {
+            points += ScoreGraphPoint(finishSeconds, cumulative)
+        }
+
+        ScoreGraphSeries(participant = participant, result = result, points = points)
+    }
+
+    return ScoreGraphData(series = series)
 }

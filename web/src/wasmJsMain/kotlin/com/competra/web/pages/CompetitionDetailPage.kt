@@ -86,6 +86,7 @@ fun CompetitionDetailPage(
     onParticipantClick: (String) -> Unit = {},
     onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
     onRaceGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
+    onScoreGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
 ) {
     val repo: CompetitionRepository = koinInject()
     val userRepo: UserRepository = koinInject()
@@ -210,6 +211,7 @@ fun CompetitionDetailPage(
                     onParticipantClick = onParticipantClick,
                     onGroupSplitsClick = onGroupSplitsClick,
                     onRaceGraphClick = onRaceGraphClick,
+                    onScoreGraphClick = onScoreGraphClick,
                 )
             }
         }

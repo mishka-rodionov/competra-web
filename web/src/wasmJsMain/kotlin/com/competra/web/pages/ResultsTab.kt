@@ -54,6 +54,7 @@ fun ResultsTab(
     onParticipantClick: (String) -> Unit = {},
     onGroupSplitsClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
     onRaceGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
+    onScoreGraphClick: (Long, String, Long?) -> Unit = { _, _, _ -> },
 ) {
     val isByChoice = direction == "BY_CHOICE"
     val repo: ResultRepository = koinInject()
@@ -144,6 +145,7 @@ fun ResultsTab(
                 onParticipantClick = onParticipantClick,
                 onGroupSplitsClick = onGroupSplitsClick,
                 onRaceGraphClick = onRaceGraphClick,
+                onScoreGraphClick = onScoreGraphClick,
             )
         }
     }
@@ -160,6 +162,7 @@ private fun GroupResultsCard(
     onParticipantClick: (String) -> Unit,
     onGroupSplitsClick: (Long, String, Long?) -> Unit,
     onRaceGraphClick: (Long, String, Long?) -> Unit,
+    onScoreGraphClick: (Long, String, Long?) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -175,11 +178,14 @@ private fun GroupResultsCard(
                 Text(groupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Row {
                     TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
-                    // График отставания от лидера по кумулятивному времени не имеет смысла для
-                    // BY_CHOICE — у каждого участника свой набор и порядок КП, сравнивать нечего.
-                    if (!isByChoice) {
-                        TextButton(onClick = { onRaceGraphClick(groupId, groupTitle, distanceId) }) { Text("График") }
-                    }
+                    // Для BY_CHOICE «График» — это график набора очков во времени (нет общего
+                    // порядка КП, поэтому график отставания от лидера по позиции не применим).
+                    TextButton(
+                        onClick = {
+                            if (isByChoice) onScoreGraphClick(groupId, groupTitle, distanceId)
+                            else onRaceGraphClick(groupId, groupTitle, distanceId)
+                        }
+                    ) { Text("График") }
                 }
             }
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
