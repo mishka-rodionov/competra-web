@@ -34,8 +34,9 @@ data class SplitsTableRow(
      * Null для FORWARD/MARKING. Считается один раз здесь, чтобы UI не знал про Distance/ControlPoint. */
     val rawScore: Int? = null,
     /** Дистанция, пройденная участником (BY_CHOICE), в метрах — сумма расстояний между
-     * последовательно взятыми КП по их координатам. Null для FORWARD/MARKING и когда у дистанции
-     * нет координат КП. Первый взятый КП в сумму не входит — координата точки старта неизвестна. */
+     * последовательно взятыми КП по их координатам. Null для FORWARD/MARKING, когда у дистанции
+     * нет координат КП, и когда сумма получилась нулевой (ни одного перегона с известными
+     * координатами). Первый взятый КП в сумму не входит — координата точки старта неизвестна. */
     val totalDistanceMeters: Double? = null,
 )
 
@@ -164,7 +165,7 @@ private fun byChoiceDistanceMeters(splits: List<SplitTime>, controlPointByNumber
         val to = controlPointByNumber[splits[i].controlPoint]
         sum += controlPointDistanceMeters(from, to) ?: 0.0
     }
-    return sum
+    return sum.takeIf { it > 0.0 }
 }
 
 /**
