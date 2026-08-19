@@ -129,6 +129,15 @@ fun GroupSplitsTablePage(
                             )
                         }
                     }
+                    if (isByChoice) {
+                        Box(modifier = Modifier.width(SPLIT_COLUMN_WIDTH), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Дистанция",
+                                style = MaterialTheme.typography.labelSmall,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
                 }
             }
             HorizontalDivider()
@@ -193,6 +202,14 @@ fun GroupSplitsTablePage(
                                     }
                                 }
                             }
+                            if (isByChoice) {
+                                Box(modifier = Modifier.width(SPLIT_COLUMN_WIDTH).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        row.totalDistanceMeters?.let { formatKm(it) } ?: "—",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                }
+                            }
                         }
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -207,6 +224,13 @@ private fun scoreLabel(row: SplitsTableRow): String {
     val penalty = row.result?.scorePenalty ?: 0
     val rawScore = row.rawScore ?: (netScore + penalty)
     return if (penalty > 0) "$rawScore - $penalty (штраф) = $netScore" else "$netScore очков"
+}
+
+private fun formatKm(meters: Double): String {
+    val roundedTenths = (meters / 100.0).let { if (it < 0) 0L else (it + 0.5).toLong() }
+    val km = roundedTenths / 10
+    val tenths = roundedTenths % 10
+    return "$km.$tenths км"
 }
 
 private fun formatPace(minPerKm: Double): String {

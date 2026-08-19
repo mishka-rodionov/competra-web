@@ -33,6 +33,10 @@ data class SplitsTableRow(
     /** Сырые очки за фактически взятые КП (BY_CHOICE) — сумма по дистанции, ДО вычета штрафа.
      * Null для FORWARD/MARKING. Считается один раз здесь, чтобы UI не знал про Distance/ControlPoint. */
     val rawScore: Int? = null,
+    /** Дистанция, пройденная участником (BY_CHOICE), в метрах — сумма расстояний между
+     * последовательно взятыми КП по их координатам. Null для FORWARD/MARKING и когда у дистанции
+     * нет координат КП. Первый взятый КП в сумму не входит — координата точки старта неизвестна. */
+    val totalDistanceMeters: Double? = null,
 )
 
 data class SplitsTable(
@@ -146,6 +150,24 @@ private fun rawByChoiceScore(result: OrienteeringResult?, scoreByNumber: Map<Int
 }
 
 /**
+ * Дистанция, пройденная участником (BY_CHOICE), в метрах — сумма расстояний между
+ * последовательно взятыми КП по их координатам ([controlPointByNumber]). Первый взятый КП не
+ * учитывается — координата точки старта неизвестна. Перегоны с неизвестными координатами (нет
+ * хотя бы одной из точек) в сумму не входят — итог остаётся приблизительным, а не null, чтобы
+ * частичное отсутствие координат не скрывало всю оценку целиком.
+ */
+private fun byChoiceDistanceMeters(splits: List<SplitTime>, controlPointByNumber: Map<Int, ControlPoint>): Double? {
+    if (controlPointByNumber.isEmpty() || splits.size < 2) return null
+    var sum = 0.0
+    for (i in 1 until splits.size) {
+        val from = controlPointByNumber[splits[i - 1].controlPoint]
+        val to = controlPointByNumber[splits[i].controlPoint]
+        sum += controlPointDistanceMeters(from, to) ?: 0.0
+    }
+    return sum
+}
+
+/**
  * Строит сравнительную таблицу сплитов по группе участников.
  *
  * Для FORWARD/MARKING колонки берутся из самого длинного массива splits среди участников
@@ -169,6 +191,7 @@ fun buildSplitsTable(
 
     if (direction == "BY_CHOICE") {
         val scoreByNumber = distance?.controlPoints?.associate { it.number to it.score } ?: emptyMap()
+        val controlPointByNumber = distance?.controlPoints?.associateBy { it.number } ?: emptyMap()
         val maxSplitsCount = pairs.maxOfOrNull { (_, result) -> result?.splits?.size ?: 0 } ?: 0
         val columns = (1..maxSplitsCount).map { SplitsTableColumn(positionIndex = it, controlPoint = 0) }
 
@@ -204,6 +227,7 @@ fun buildSplitsTable(
                 result = result,
                 cells = cells,
                 rawScore = rawByChoiceScore(result, scoreByNumber),
+                totalDistanceMeters = byChoiceDistanceMeters(splits, controlPointByNumber),
             )
         }
 
