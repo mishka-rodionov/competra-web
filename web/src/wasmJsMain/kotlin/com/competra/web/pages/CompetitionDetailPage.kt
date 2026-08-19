@@ -179,7 +179,8 @@ fun CompetitionDetailPage(
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0; onTabChange(0) }, text = { Text("О соревновании") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1; onTabChange(1) }, text = { Text("Группы") })
                 Tab(selected = selectedTab == 2, onClick = { selectedTab = 2; onTabChange(2) }, text = { Text("Дистанции") })
-                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3; onTabChange(3) }, text = { Text("Результаты") })
+                Tab(selected = selectedTab == 3, onClick = { selectedTab = 3; onTabChange(3) }, text = { Text("Стартовый протокол") })
+                Tab(selected = selectedTab == 4, onClick = { selectedTab = 4; onTabChange(4) }, text = { Text("Результаты") })
             }
             when (selectedTab) {
                 0 -> InfoTab(detail = d, organizerClubName = organizerClubName)
@@ -202,7 +203,13 @@ fun CompetitionDetailPage(
                     },
                 )
                 2 -> DistancesTab(competitionId = competitionId, isByChoice = d.direction == "BY_CHOICE")
-                3 -> ResultsTab(
+                3 -> StartProtocolTab(
+                    competitionId = competitionId,
+                    groups = d.participantGroups,
+                    timeZoneId = d.timeZoneId,
+                    onParticipantClick = onParticipantClick,
+                )
+                4 -> ResultsTab(
                     competitionId = competitionId,
                     groups = d.participantGroups,
                     competitionStatus = d.status,
