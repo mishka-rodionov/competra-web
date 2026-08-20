@@ -14,6 +14,11 @@ data class Distance(
     @SerialName("description")        val description: String? = null,
     @SerialName("controlPoints")      val controlPoints: List<ControlPoint> = emptyList(),
     @SerialName("finishControlPoint") val finishControlPoint: Int? = null,
+    @SerialName("mapUrl")             val mapUrl: String? = null,
+    @SerialName("mapTopLeftLat")      val mapTopLeftLat: Double? = null,
+    @SerialName("mapTopLeftLng")      val mapTopLeftLng: Double? = null,
+    @SerialName("mapBottomRightLat")  val mapBottomRightLat: Double? = null,
+    @SerialName("mapBottomRightLng")  val mapBottomRightLng: Double? = null,
     @SerialName("updatedAt")          val updatedAt: Long = 0L,
 )
 
@@ -37,4 +42,9 @@ data class SaveDistanceRequest(
     @SerialName("description")         val description: String = "",
     @SerialName("controlPoints")       val controlPoints: List<ControlPoint> = emptyList(),
     @SerialName("finishControlPoint")  val finishControlPoint: Int? = null,
+    @SerialName("mapUrl")              val mapUrl: String? = null,
+    @SerialName("mapTopLeftLat")       val mapTopLeftLat: Double? = null,
+    @SerialName("mapTopLeftLng")       val mapTopLeftLng: Double? = null,
+    @SerialName("mapBottomRightLat")   val mapBottomRightLat: Double? = null,
+    @SerialName("mapBottomRightLng")   val mapBottomRightLng: Double? = null,
 )

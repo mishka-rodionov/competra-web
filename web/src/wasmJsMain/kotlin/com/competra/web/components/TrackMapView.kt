@@ -25,33 +25,16 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.competra.domain.diary.TrackPoint
 import com.competra.web.utils.OSM_TILE_SIZE
+import com.competra.web.utils.bestFitZoom
 import com.competra.web.utils.latToTileY
 import com.competra.web.utils.loadTileBitmap
 import com.competra.web.utils.lonToTileX
 import kotlinx.coroutines.launch
 
-private const val MIN_ZOOM = 3
-private const val MAX_ZOOM = 18
 private const val TILE_LOAD_RANGE = 2
 
 /** Отступ вокруг bounding box трека при подборе зума — трек не должен упираться в края. */
 private const val BOUNDS_PADDING_FACTOR = 1.25
-
-private fun bestFitZoom(
-    minLat: Double, maxLat: Double, minLon: Double, maxLon: Double,
-    viewportW: Float, viewportH: Float,
-): Int {
-    for (z in MAX_ZOOM downTo MIN_ZOOM) {
-        val x1 = lonToTileX(minLon, z)
-        val x2 = lonToTileX(maxLon, z)
-        val y1 = latToTileY(maxLat, z)
-        val y2 = latToTileY(minLat, z)
-        val widthPx = (x2 - x1) * OSM_TILE_SIZE * BOUNDS_PADDING_FACTOR
-        val heightPx = (y2 - y1) * OSM_TILE_SIZE * BOUNDS_PADDING_FACTOR
-        if (widthPx <= viewportW && heightPx <= viewportH) return z
-    }
-    return MIN_ZOOM
-}
 
 /**
  * Неинтерактивная карта с треком тренировки: тайлы OSM отрисованы вручную на Canvas
@@ -81,7 +64,7 @@ fun TrackMapView(points: List<TrackPoint>, modifier: Modifier = Modifier) {
     Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant).onSizeChanged { containerSize = it }) {
         if (containerSize.width == 0 || containerSize.height == 0) return@Box
 
-        val zoom = bestFitZoom(minLat, maxLat, minLon, maxLon, containerSize.width.toFloat(), containerSize.height.toFloat())
+        val zoom = bestFitZoom(minLat, maxLat, minLon, maxLon, containerSize.width.toFloat(), containerSize.height.toFloat(), BOUNDS_PADDING_FACTOR)
         val centerTileX = lonToTileX(centerLon, zoom)
         val centerTileY = latToTileY(centerLat, zoom)
         val baseTileX = kotlin.math.floor(centerTileX).toInt()

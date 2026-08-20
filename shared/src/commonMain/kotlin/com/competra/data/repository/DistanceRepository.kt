@@ -16,6 +16,13 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+private data class UploadResponse(
+    @SerialName("url") val url: String,
+)
 
 class DistanceRepository(private val client: HttpClient) {
 
@@ -41,6 +48,25 @@ class DistanceRepository(private val client: HttpClient) {
             setBody(requests)
         }.body<CommonModel<List<Distance>>>()
     }
+
+    /**
+     * Загружает файл карты дистанции (растр из mapper) в объектное хранилище и возвращает
+     * его публичный URL. Полученный URL и координаты углов нужно затем сохранить отдельным
+     * вызовом [saveDistance] — так же, как загружаются аватары/обложки соревнований.
+     */
+    suspend fun uploadDistanceMap(bytes: ByteArray, fileName: String, contentType: String): ApiResult<String> =
+        safeApiCall {
+            val response = client.post("$BASE_URL/upload/file") {
+                setBody(MultiPartFormDataContent(formData {
+                    append("type", "distance-map")
+                    append("file", bytes, Headers.build {
+                        append(HttpHeaders.ContentType, contentType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                    })
+                }))
+            }.body<CommonModel<UploadResponse>>()
+            CommonModel(status = response.status, result = response.result?.url, errors = response.errors)
+        }
 
     suspend fun importFromXml(competitionId: String, xmlBytes: ByteArray): ApiResult<List<Distance>> =
         safeApiCall {
