@@ -1,11 +1,13 @@
 package com.competra.web
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -15,9 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.Rating
 import com.competra.domain.models.RatingGroup
@@ -244,17 +244,6 @@ fun App(initialPage: Page = Page.Competitions) {
 }
 
 @Composable
-private fun NavIcon(selected: Boolean, label: String) {
-    val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Box(
-        modifier = Modifier.size(24.dp).background(color, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = MaterialTheme.colorScheme.surface, style = MaterialTheme.typography.labelSmall)
-    }
-}
-
-@Composable
 private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
     Scaffold(
         bottomBar = {
@@ -262,31 +251,31 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                 NavigationBarItem(
                     selected = currentPage is Page.Competitions,
                     onClick = { onNavigate(Page.Competitions) },
-                    icon = { NavIcon(selected = currentPage is Page.Competitions, label = "С") },
+                    icon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
                     label = { Text("Соревнования") },
                 )
                 NavigationBarItem(
                     selected = currentPage is Page.Management,
                     onClick = { onNavigate(Page.Management) },
-                    icon = { NavIcon(selected = currentPage is Page.Management, label = "У") },
+                    icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
                     label = { Text("Управление") },
                 )
                 NavigationBarItem(
                     selected = currentPage is Page.Clubs,
                     onClick = { onNavigate(Page.Clubs) },
-                    icon = { NavIcon(selected = currentPage is Page.Clubs, label = "К") },
+                    icon = { Icon(Icons.Filled.Groups, contentDescription = null) },
                     label = { Text("Клубы") },
                 )
                 NavigationBarItem(
                     selected = currentPage is Page.Diary,
                     onClick = { onNavigate(Page.Diary) },
-                    icon = { NavIcon(selected = currentPage is Page.Diary, label = "Д") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
                     label = { Text("Дневник") },
                 )
                 NavigationBarItem(
                     selected = currentPage is Page.Profile,
                     onClick = { onNavigate(Page.Profile) },
-                    icon = { NavIcon(selected = currentPage is Page.Profile, label = "П") },
+                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
                     label = { Text("Профиль") },
                 )
             }
