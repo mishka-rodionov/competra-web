@@ -51,8 +51,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private const val TILE_LOAD_RANGE = 2
-
 /** Отступ вокруг карты дистанции при подборе зума — карта не должна упираться в края. */
 private const val BOUNDS_PADDING_FACTOR = 1.1
 
@@ -224,10 +222,17 @@ fun DistanceMapView(
         val baseTileX = kotlin.math.floor(centerTileX).toInt()
         val baseTileY = kotlin.math.floor(centerTileY).toInt()
 
-        LaunchedEffect(baseTileX, baseTileY, zoom) {
+        // Диапазон тайлов считаем от реального размера контейнера, а не фиксированной константой —
+        // иначе на широком экране/при большом зуме тайлы покрывают только центральную область,
+        // а по краям видна голая подложка (особенно заметно при увеличении масштаба).
+        // +1 — запас, чтобы тайлы не обрезались ровно по краю видимой области.
+        val tileRangeX = kotlin.math.ceil(containerSize.width / 2f / effectiveTileSize).toInt() + 1
+        val tileRangeY = kotlin.math.ceil(containerSize.height / 2f / effectiveTileSize).toInt() + 1
+
+        LaunchedEffect(baseTileX, baseTileY, zoom, tileRangeX, tileRangeY) {
             val maxTile = (1 shl zoom) - 1
-            for (dx in -TILE_LOAD_RANGE..TILE_LOAD_RANGE) {
-                for (dy in -TILE_LOAD_RANGE..TILE_LOAD_RANGE) {
+            for (dx in -tileRangeX..tileRangeX) {
+                for (dy in -tileRangeY..tileRangeY) {
                     val tx = baseTileX + dx
                     val ty = baseTileY + dy
                     if (tx < 0 || ty < 0 || tx > maxTile || ty > maxTile) continue
@@ -246,8 +251,8 @@ fun DistanceMapView(
             val viewportH = size.height
             val maxTile = (1 shl zoom) - 1
 
-            for (dx in -TILE_LOAD_RANGE..TILE_LOAD_RANGE) {
-                for (dy in -TILE_LOAD_RANGE..TILE_LOAD_RANGE) {
+            for (dx in -tileRangeX..tileRangeX) {
+                for (dy in -tileRangeY..tileRangeY) {
                     val tx = baseTileX + dx
                     val ty = baseTileY + dy
                     if (tx < 0 || ty < 0 || tx > maxTile || ty > maxTile) continue
