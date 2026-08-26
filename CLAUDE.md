@@ -53,6 +53,8 @@ Compose Multiplatform UI, рендерится через `ComposeViewport(docum
 
 **Токен**: хранится в `localStorage` под ключом `competra_access_token`. Нативный JS вызывается через `@JsFun`.
 
+**Ошибки сетевых запросов в debug-режиме**: любой новый сетевой вызов (загрузка файлов, картинок, кастомные `HttpClient`-запросы в обход `safeApiCall`) должен в `catch`-блоке звать `DebugErrorReporter.report("...")` с коротким описанием, что за запрос и что пошло не так — **прежде чем** проглатывать ошибку молча. `DebugErrorReporter` (`web/utils/DebugErrorReporter.kt`) сам решает, показывать ли ошибку — только если `isDebugEnvironment()` (localhost, либо `?debug=1` в URL). Показывается плашкой `DebugErrorBanner` над таб-баром/нижней частью экрана — подключается через `bottomBar` в `Scaffold` каждой новой страницы (см. `MainScaffold` в `App.kt` и `CompetitionDetailPage.kt` как примеры). Также лови `catch (e: Throwable)`, а не `catch (e: Exception)`, с явным пробросом `CancellationException` — на wasmJs сетевые сбои `fetch()` иногда всплывают как `Throwable`, не являющийся `Exception`, и необработанное исключение в `LaunchedEffect`-корутине останавливает весь Compose `Recomposer` (вешает всё приложение, не только упавший запрос).
+
 ## Commands
 - Always use rtk for commands (rtk grep, rtk find, rtk git, and etc.)
 

@@ -8,12 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -337,32 +335,26 @@ internal fun DistanceCard(
             val bottomRightLat = distance.mapBottomRightLat
             val bottomRightLng = distance.mapBottomRightLng
             if (mapUrl != null && topLeftLat != null && topLeftLng != null && bottomRightLat != null && bottomRightLng != null) {
-                Box(
+                // Превью карты здесь намеренно не рендерим: полноразмерный экспорт из mapper может
+                // быть очень тяжёлым для декода, а Compose/Wasm в браузере однопоточный — декод
+                // блокирует не только карту, а всю страницу. Настоящая карта грузится только по
+                // клику, в ExpandedDistanceMap (см. DistancesTab).
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
                         .clip(MaterialTheme.shapes.medium)
-                        .clickable { onExpandMap(distance) },
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onExpandMap(distance) }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    DistanceMapView(
-                        mapUrl = mapUrl,
-                        topLeftLat = topLeftLat,
-                        topLeftLng = topLeftLng,
-                        bottomRightLat = bottomRightLat,
-                        bottomRightLng = bottomRightLng,
-                        modifier = Modifier.fillMaxSize(),
+                    Icon(Icons.Filled.OpenInFull, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Открыть карту дистанции",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
-                    ) {
-                        IconButton(onClick = { onExpandMap(distance) }) {
-                            Icon(Icons.Filled.OpenInFull, contentDescription = "Развернуть карту")
-                        }
-                    }
                 }
             }
 

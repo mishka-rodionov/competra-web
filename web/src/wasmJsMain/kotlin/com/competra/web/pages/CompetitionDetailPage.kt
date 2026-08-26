@@ -69,6 +69,7 @@ import com.competra.domain.models.CompetitionDetail
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.domain.models.RegisterEventRequest
 import com.competra.domain.models.UserProfile
+import com.competra.web.components.DebugErrorBanner
 import com.competra.web.utils.DEFAULT_TIME_ZONE
 import com.competra.web.utils.openExternalLink
 import com.competra.web.utils.toLocaleDateString
@@ -158,7 +159,8 @@ fun CompetitionDetailPage(
                     }
                 },
             )
-        }
+        },
+        bottomBar = { DebugErrorBanner() },
     ) { padding ->
         if (loading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

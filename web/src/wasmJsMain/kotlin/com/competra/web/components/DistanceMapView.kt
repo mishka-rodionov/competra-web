@@ -2,7 +2,7 @@ package com.competra.web.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
@@ -42,6 +43,7 @@ import com.competra.web.utils.latToTileY
 import com.competra.web.utils.loadImageBitmapFromUrl
 import com.competra.web.utils.loadTileBitmap
 import com.competra.web.utils.lonToTileX
+import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.debounce
@@ -56,6 +58,14 @@ private const val BOUNDS_PADDING_FACTOR = 1.1
 
 /** Шаг одного клика по +/-: 2^0.5 ≈ 1.41x размера — заметно, но не "прыжок через весь экран". */
 private const val ZOOM_STEP = 0.5
+
+/**
+ * Во сколько зум-уровней (по основанию 2) переводить один "нотч" колеса мыши/трекпада.
+ * `WheelEvent.deltaY` приходит в пикселях без нормализации (см. ComposeWindow.web.kt),
+ * обычная мышь даёт ~100-120 за нотч, трекпад — мелкие значения при инерционном скролле.
+ * Знаменатель подобран так, чтобы один нотч мыши ощущался примерно как один клик по "+".
+ */
+private const val WHEEL_ZOOM_SENSITIVITY = 1.0 / 300.0
 
 /**
  * Карта дистанции: тайлы OSM, поверх — растровая карта соревнования (экспорт из mapper),
@@ -111,6 +121,30 @@ fun DistanceMapView(
     fun tileZoomOf(effectiveZoom: Double) = effectiveZoom.roundToInt().coerceIn(MIN_MAP_ZOOM, MAX_MAP_ZOOM)
     fun scaleOf(effectiveZoom: Double) = 2.0.pow(effectiveZoom - tileZoomOf(effectiveZoom))
 
+    /**
+     * Зумирует так, чтобы мировая точка под экранными координатами [focalX]/[focalY] осталась
+     * на месте (как в обычных интерактивных картах — зум "к курсору"/"к центру щипка", а не
+     * всегда к центру экрана). Используется и колесом мыши, и pinch-жестом; кнопки +/- зовут её
+     * же с focal = центр экрана.
+     */
+    fun applyZoomAtPoint(newEffZoomRaw: Double, focalX: Float, focalY: Float) {
+        val effZoom = interactiveZoom ?: return
+        val newEffZoom = newEffZoomRaw.coerceIn(MIN_MAP_ZOOM.toDouble(), MAX_MAP_ZOOM.toDouble())
+        if (newEffZoom == effZoom) return
+        val viewportW = containerSize.width.toFloat()
+        val viewportH = containerSize.height.toFloat()
+
+        val oldEffectiveTileSize = OSM_TILE_SIZE * scaleOf(effZoom)
+        val worldX = interactiveCenterTileX + (focalX - viewportW / 2f) / oldEffectiveTileSize
+        val worldY = interactiveCenterTileY + (focalY - viewportH / 2f) / oldEffectiveTileSize
+
+        val rebaseFactor = 2.0.pow(tileZoomOf(newEffZoom) - tileZoomOf(effZoom))
+        val newEffectiveTileSize = OSM_TILE_SIZE * scaleOf(newEffZoom)
+        interactiveCenterTileX = worldX * rebaseFactor - (focalX - viewportW / 2f) / newEffectiveTileSize
+        interactiveCenterTileY = worldY * rebaseFactor - (focalY - viewportH / 2f) / newEffectiveTileSize
+        interactiveZoom = newEffZoom
+    }
+
     // Инициализация fit-зума для interactive-режима — строго один раз за всё время жизни
     // composable (иначе запись состояния на каждое изменение containerSize рискует зациклиться,
     // если размер контейнера хоть немного "дрожит" между кадрами). Ждём через snapshotFlow +
@@ -136,15 +170,35 @@ fun DistanceMapView(
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .onSizeChanged { containerSize = it }
             .let { base ->
-                if (!interactive) base else base.pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        val effZoom = interactiveZoom ?: return@detectDragGestures
-                        val effectiveTileSize = OSM_TILE_SIZE * scaleOf(effZoom)
-                        interactiveCenterTileX -= dragAmount.x / effectiveTileSize
-                        interactiveCenterTileY -= dragAmount.y / effectiveTileSize
+                if (!interactive) base else base
+                    .pointerInput(Unit) {
+                        // Пан жестом (один палец/мышь) и pinch-зум (два пальца/трекпад) — обе
+                        // руки одного жеста, поэтому detectTransformGestures, а не отдельный drag.
+                        detectTransformGestures { centroid, pan, zoomFactor, _ ->
+                            val effZoom = interactiveZoom ?: return@detectTransformGestures
+                            val effectiveTileSize = OSM_TILE_SIZE * scaleOf(effZoom)
+                            interactiveCenterTileX -= pan.x / effectiveTileSize
+                            interactiveCenterTileY -= pan.y / effectiveTileSize
+                            if (zoomFactor != 1f) {
+                                val deltaZoom = ln(zoomFactor.toDouble()) / ln(2.0)
+                                applyZoomAtPoint(effZoom + deltaZoom, centroid.x, centroid.y)
+                            }
+                        }
                     }
-                }
+                    .pointerInput(Unit) {
+                        // Зум колесом мыши/трекпадом — к точке под курсором, непрерывно (без шага).
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                if (event.type != PointerEventType.Scroll) continue
+                                val change = event.changes.firstOrNull() ?: continue
+                                val effZoom = interactiveZoom ?: continue
+                                val deltaZoom = -change.scrollDelta.y * WHEEL_ZOOM_SENSITIVITY
+                                applyZoomAtPoint(effZoom + deltaZoom, change.position.x, change.position.y)
+                                change.consume()
+                            }
+                        }
+                    }
             },
     ) {
         if (containerSize.width == 0 || containerSize.height == 0) return@Box
@@ -246,31 +300,11 @@ fun DistanceMapView(
             ) {
                 ZoomButton(icon = Icons.Filled.Add, contentDescription = "Приблизить") {
                     val current = interactiveZoom ?: return@ZoomButton
-                    val next = (current + ZOOM_STEP).coerceIn(MIN_MAP_ZOOM.toDouble(), MAX_MAP_ZOOM.toDouble())
-                    if (next != current) {
-                        val oldTileZoom = tileZoomOf(current)
-                        val newTileZoom = tileZoomOf(next)
-                        if (newTileZoom != oldTileZoom) {
-                            val factor = 2.0.pow(newTileZoom - oldTileZoom)
-                            interactiveCenterTileX *= factor
-                            interactiveCenterTileY *= factor
-                        }
-                        interactiveZoom = next
-                    }
+                    applyZoomAtPoint(current + ZOOM_STEP, containerSize.width / 2f, containerSize.height / 2f)
                 }
                 ZoomButton(icon = Icons.Filled.Remove, contentDescription = "Отдалить") {
                     val current = interactiveZoom ?: return@ZoomButton
-                    val next = (current - ZOOM_STEP).coerceIn(MIN_MAP_ZOOM.toDouble(), MAX_MAP_ZOOM.toDouble())
-                    if (next != current) {
-                        val oldTileZoom = tileZoomOf(current)
-                        val newTileZoom = tileZoomOf(next)
-                        if (newTileZoom != oldTileZoom) {
-                            val factor = 2.0.pow(newTileZoom - oldTileZoom)
-                            interactiveCenterTileX *= factor
-                            interactiveCenterTileY *= factor
-                        }
-                        interactiveZoom = next
-                    }
+                    applyZoomAtPoint(current - ZOOM_STEP, containerSize.width / 2f, containerSize.height / 2f)
                 }
             }
         }

@@ -59,7 +59,6 @@ import com.competra.domain.models.OrienteeringResult
 import com.competra.domain.models.ParticipantGroupDetail
 import com.competra.web.components.CoordinatesPickerField
 import com.competra.web.components.DateField
-import com.competra.web.components.ImportResultsPreviewDialog
 import com.competra.web.components.LabeledDropdown
 import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
@@ -91,9 +90,11 @@ private val GENDER_OPTIONS = listOf(
 @Composable
 fun ManageCompetitionPage(
     competition: OrienteeringCompetition,
+    initialTab: Int = 0,
     onBack: () -> Unit,
+    onImportResultsReview: (ImportResultsDiff, List<OrienteeringParticipant>, List<OrienteeringResult>) -> Unit,
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(initialTab) }
 
     Scaffold(
         topBar = {
@@ -124,7 +125,7 @@ fun ManageCompetitionPage(
                     showImport = true,
                     isByChoice = competition.direction == "BY_CHOICE",
                 )
-                4 -> ResultsManageTab(competition = competition)
+                4 -> ResultsManageTab(competition = competition, onImportResultsReview = onImportResultsReview)
             }
         }
     }
@@ -779,9 +780,11 @@ private fun AddGroupDialog(
 }
 
 @Composable
-private fun ResultsManageTab(competition: OrienteeringCompetition) {
+private fun ResultsManageTab(
+    competition: OrienteeringCompetition,
+    onImportResultsReview: (ImportResultsDiff, List<OrienteeringParticipant>, List<OrienteeringResult>) -> Unit,
+) {
     val competitionId = competition.competitionId
-    val competitionTitle = competition.competition.title
     val repo: ResultRepository = koinInject()
     val competitionRepo: CompetitionRepository = koinInject()
     val scope = rememberCoroutineScope()
@@ -789,9 +792,7 @@ private fun ResultsManageTab(competition: OrienteeringCompetition) {
     var results by remember { mutableStateOf<List<OrienteeringResult>>(emptyList()) }
     var participants by remember { mutableStateOf<List<OrienteeringParticipant>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
-    var importing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var previewDiff by remember { mutableStateOf<ImportResultsDiff?>(null) }
     var resultsStatus by remember { mutableStateOf(competition.competition.resultsStatus) }
     var showPublishConfirm by remember { mutableStateOf(false) }
     var publishing by remember { mutableStateOf(false) }
@@ -806,30 +807,6 @@ private fun ResultsManageTab(competition: OrienteeringCompetition) {
             is ApiResult.Error -> {}
         }
         loading = false
-    }
-
-    previewDiff?.let { diff ->
-        ImportResultsPreviewDialog(
-            competitionTitle = competitionTitle,
-            changed = diff.changed,
-            unmatched = diff.unmatched,
-            onDismiss = { previewDiff = null },
-            onConfirm = { selectedRows ->
-                scope.launch {
-                    importing = true
-                    error = null
-                    when (val r = repo.saveResults(selectedRows.map { it.request })) {
-                        is ApiResult.Success -> {
-                            val savedIds = r.data.map { it.participantId }.toSet()
-                            results = results.filter { it.participantId !in savedIds } + r.data
-                        }
-                        is ApiResult.Error -> error = r.message
-                    }
-                    importing = false
-                    previewDiff = null
-                }
-            },
-        )
     }
 
     if (showPublishConfirm) {
@@ -877,7 +854,7 @@ private fun ResultsManageTab(competition: OrienteeringCompetition) {
         ) {
             Text("Результаты", style = MaterialTheme.typography.titleSmall)
             Button(
-                enabled = !loading && !importing,
+                enabled = !loading,
                 onClick = {
                     pickHtmlFile { _, content ->
                         error = null
@@ -886,7 +863,12 @@ private fun ResultsManageTab(competition: OrienteeringCompetition) {
                             error = "Не удалось распознать файл — проверьте, что это HTML-протокол результатов."
                             return@pickHtmlFile
                         }
-                        previewDiff = buildResultsDiff(parsedRows, participants, results, competitionId)
+                        val diff = buildResultsDiff(parsedRows, participants, results, competitionId)
+                        if (diff.changed.isEmpty() && diff.unmatched.isEmpty()) {
+                            error = "В файле не найдено ни одной строки результатов."
+                            return@pickHtmlFile
+                        }
+                        onImportResultsReview(diff, participants, results)
                     }
                 },
             ) {
@@ -916,7 +898,7 @@ private fun ResultsManageTab(competition: OrienteeringCompetition) {
 
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
 
-        if (loading || importing) {
+        if (loading) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
         } else if (results.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

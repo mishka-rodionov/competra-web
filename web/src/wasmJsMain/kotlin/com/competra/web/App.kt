@@ -1,5 +1,6 @@
 package com.competra.web
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
@@ -19,9 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.competra.domain.models.OrienteeringCompetition
+import com.competra.domain.models.OrienteeringParticipant
+import com.competra.domain.models.OrienteeringResult
 import com.competra.domain.models.Rating
 import com.competra.domain.models.RatingGroup
 import com.competra.domain.models.RatingGroupMappingSuggestion
+import com.competra.web.components.DebugErrorBanner
 import com.competra.web.pages.AboutPage
 import com.competra.web.pages.AddCompetitionToRatingPage
 import com.competra.web.pages.ClubDetailPage
@@ -34,6 +38,7 @@ import com.competra.web.pages.CreateCompetitionPage
 import com.competra.web.pages.DiaryListPage
 import com.competra.web.pages.GroupMappingPage
 import com.competra.web.pages.GroupSplitsTablePage
+import com.competra.web.pages.ImportResultsReviewPage
 import com.competra.web.pages.ManageCompetitionPage
 import com.competra.web.pages.ManagementPage
 import com.competra.web.pages.MyJoinRequestsPage
@@ -51,13 +56,20 @@ import com.competra.web.pages.WorkoutDetailPage
 import com.competra.web.pages.WorkoutEditorPage
 import com.competra.web.pages.WorkoutTrackPage
 import com.competra.web.theme.CompetiraTheme
+import com.competra.web.utils.ImportResultsDiff
 
 sealed class Page {
     data object Competitions : Page()
     data class CompetitionDetail(val competitionId: String, val selectedTab: Int = 0) : Page()
     data object Management : Page()
     data object CreateCompetition : Page()
-    data class ManageCompetition(val competition: OrienteeringCompetition) : Page()
+    data class ManageCompetition(val competition: OrienteeringCompetition, val initialTab: Int = 0) : Page()
+    data class ImportResultsReview(
+        val competition: OrienteeringCompetition,
+        val diff: ImportResultsDiff,
+        val participants: List<OrienteeringParticipant>,
+        val currentResults: List<OrienteeringResult>,
+    ) : Page()
     data object Profile : Page()
     data object ProfileEditor : Page()
     data object About : Page()
@@ -148,7 +160,18 @@ fun App(initialPage: Page = Page.Competitions) {
             )
             is Page.ManageCompetition -> ManageCompetitionPage(
                 competition = current.competition,
+                initialTab = current.initialTab,
                 onBack = { page = Page.Management },
+                onImportResultsReview = { diff, participants, results ->
+                    page = Page.ImportResultsReview(current.competition, diff, participants, results)
+                },
+            )
+            is Page.ImportResultsReview -> ImportResultsReviewPage(
+                competition = current.competition,
+                participants = current.participants,
+                currentResults = current.currentResults,
+                diff = current.diff,
+                onBack = { page = Page.ManageCompetition(current.competition, initialTab = 4) },
             )
             is Page.ProfileEditor -> ProfileEditorPage(
                 onBack = { page = Page.Profile },
@@ -247,37 +270,40 @@ fun App(initialPage: Page = Page.Competitions) {
 private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = currentPage is Page.Competitions,
-                    onClick = { onNavigate(Page.Competitions) },
-                    icon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                    label = { Text("Соревнования") },
-                )
-                NavigationBarItem(
-                    selected = currentPage is Page.Management,
-                    onClick = { onNavigate(Page.Management) },
-                    icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
-                    label = { Text("Управление") },
-                )
-                NavigationBarItem(
-                    selected = currentPage is Page.Clubs,
-                    onClick = { onNavigate(Page.Clubs) },
-                    icon = { Icon(Icons.Filled.Groups, contentDescription = null) },
-                    label = { Text("Клубы") },
-                )
-                NavigationBarItem(
-                    selected = currentPage is Page.Diary,
-                    onClick = { onNavigate(Page.Diary) },
-                    icon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
-                    label = { Text("Дневник") },
-                )
-                NavigationBarItem(
-                    selected = currentPage is Page.Profile,
-                    onClick = { onNavigate(Page.Profile) },
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
-                    label = { Text("Профиль") },
-                )
+            Column {
+                DebugErrorBanner()
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = currentPage is Page.Competitions,
+                        onClick = { onNavigate(Page.Competitions) },
+                        icon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
+                        label = { Text("Соревнования") },
+                    )
+                    NavigationBarItem(
+                        selected = currentPage is Page.Management,
+                        onClick = { onNavigate(Page.Management) },
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        label = { Text("Управление") },
+                    )
+                    NavigationBarItem(
+                        selected = currentPage is Page.Clubs,
+                        onClick = { onNavigate(Page.Clubs) },
+                        icon = { Icon(Icons.Filled.Groups, contentDescription = null) },
+                        label = { Text("Клубы") },
+                    )
+                    NavigationBarItem(
+                        selected = currentPage is Page.Diary,
+                        onClick = { onNavigate(Page.Diary) },
+                        icon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
+                        label = { Text("Дневник") },
+                    )
+                    NavigationBarItem(
+                        selected = currentPage is Page.Profile,
+                        onClick = { onNavigate(Page.Profile) },
+                        icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
+                        label = { Text("Профиль") },
+                    )
+                }
             }
         }
     ) { padding ->
