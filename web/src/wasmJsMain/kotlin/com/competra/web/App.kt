@@ -57,6 +57,7 @@ import com.competra.web.pages.WorkoutEditorPage
 import com.competra.web.pages.WorkoutTrackPage
 import com.competra.web.theme.CompetiraTheme
 import com.competra.web.utils.ImportResultsDiff
+import com.competra.web.utils.isDebugEnvironment
 
 sealed class Page {
     data object Competitions : Page()
@@ -291,12 +292,14 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                         icon = { Icon(Icons.Filled.Groups, contentDescription = null) },
                         label = { Text("Клубы") },
                     )
-                    NavigationBarItem(
-                        selected = currentPage is Page.Diary,
-                        onClick = { onNavigate(Page.Diary) },
-                        icon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
-                        label = { Text("Дневник") },
-                    )
+                    if (isDebugEnvironment()) {
+                        NavigationBarItem(
+                            selected = currentPage is Page.Diary,
+                            onClick = { onNavigate(Page.Diary) },
+                            icon = { Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null) },
+                            label = { Text("Дневник") },
+                        )
+                    }
                     NavigationBarItem(
                         selected = currentPage is Page.Profile,
                         onClick = { onNavigate(Page.Profile) },
