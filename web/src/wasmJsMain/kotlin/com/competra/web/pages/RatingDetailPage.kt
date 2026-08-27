@@ -1,20 +1,29 @@
 package com.competra.web.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,6 +44,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.repository.ClubRepository
@@ -76,6 +87,7 @@ fun RatingDetailPage(
 
     suspend fun reload() {
         loading = true
+        standingsByGroup = emptyMap()
         when (val r = ratingRepo.getRating(ratingId)) {
             is ApiResult.Success -> {
                 rating = r.data
@@ -99,7 +111,6 @@ fun RatingDetailPage(
             is ApiResult.Success -> competitions = r.data
             is ApiResult.Error -> {}
         }
-        standingsByGroup = emptyMap()
         loading = false
     }
 
@@ -177,69 +188,75 @@ fun RatingDetailPage(
             return@Scaffold
         }
 
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            actionError?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+        // Единый скроллящийся список: иначе при длинной таблице результатов раздел
+        // "Соревнования рейтинга" уходит за пределы экрана и становится недостижим
+        // (см. тот же приём в competra-android RatingDetailScreen).
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+            actionError?.let { message ->
+                item {
+                    Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                }
             }
 
             if (r.groups.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("В рейтинге нет групп зачёта", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("В рейтинге нет групп зачёта", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             } else {
-                ScrollableTabRow(selectedTabIndex = r.groups.indexOfFirst { it.id == selectedGroupId }.coerceAtLeast(0)) {
-                    r.groups.forEach { group ->
-                        Tab(
-                            selected = group.id == selectedGroupId,
-                            onClick = { selectedGroupId = group.id },
-                            text = { Text(group.title) },
-                        )
+                item {
+                    ScrollableTabRow(selectedTabIndex = r.groups.indexOfFirst { it.id == selectedGroupId }.coerceAtLeast(0)) {
+                        r.groups.forEach { group ->
+                            Tab(
+                                selected = group.id == selectedGroupId,
+                                onClick = { selectedGroupId = group.id },
+                                text = { Text(group.title) },
+                            )
+                        }
                     }
                 }
 
                 if (standingsLoading && standingsByGroup[selectedGroupId] == null) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
                 } else {
                     val standings = selectedGroupId?.let { standingsByGroup[it] } ?: emptyList()
                     if (standings.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Text("Пока нет данных", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                                Text("Пока нет данных", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     } else {
-                        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            standings.forEach { standing ->
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        "${standing.rank}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(end = 12.dp),
-                                    )
-                                    Text(standing.displayName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                                    Text("${standing.totalPoints}", style = MaterialTheme.typography.bodyMedium)
-                                }
+                        items(standings, key = { "standing_${it.participantKey}" }) { standing ->
+                            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                                RatingStandingRow(standing)
                             }
                         }
                     }
                 }
             }
 
-            Text(
-                "Соревнования рейтинга",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            item {
+                Text(
+                    "Соревнования рейтинга",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             if (competitions.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("Соревнований пока нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("Соревнований пока нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(competitions, key = { it.id }) { rc ->
+                items(competitions, key = { "competition_${it.id}" }) { rc ->
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -274,5 +291,87 @@ fun RatingDetailPage(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RatingStandingRow(standing: RatingStanding) {
+    val startsCount = standing.breakdown.size
+    val isTopThree = standing.rank in 1..3
+    val badgeContainer = when (standing.rank) {
+        1 -> Color(0xFFE0B00A)
+        2 -> Color(0xFFA9B0B8)
+        3 -> Color(0xFFC17A3E)
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val badgeContent = if (isTopThree) Color(0xFF2A2A2A) else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = if (isTopThree) {
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+        } else {
+            CardDefaults.cardColors()
+        },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(badgeContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (isTopThree) {
+                    Icon(
+                        Icons.Filled.EmojiEvents,
+                        contentDescription = "Место ${standing.rank}",
+                        tint = badgeContent,
+                        modifier = Modifier.size(18.dp),
+                    )
+                } else {
+                    Text("${standing.rank}", style = MaterialTheme.typography.titleSmall, color = badgeContent)
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(standing.displayName, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.DirectionsRun,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        "$startsCount ${startsCountLabel(startsCount)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    "${standing.totalPoints}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text("очков", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+private fun startsCountLabel(count: Int): String {
+    val mod100 = count % 100
+    val mod10 = count % 10
+    return when {
+        mod100 in 11..14 -> "стартов"
+        mod10 == 1 -> "старт"
+        mod10 in 2..4 -> "старта"
+        else -> "стартов"
     }
 }
