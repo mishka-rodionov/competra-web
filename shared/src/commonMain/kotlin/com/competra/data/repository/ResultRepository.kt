@@ -43,6 +43,13 @@ class ResultRepository(private val publicClient: HttpClient, private val authCli
         }.body<CommonModel<OrienteeringParticipant>>()
     }
 
+    /** Сохраняет список участников одним запросом. */
+    suspend fun saveParticipants(requests: List<SaveParticipantRequest>): ApiResult<List<OrienteeringParticipant>> = safeApiCall {
+        authClient.post("$BASE_URL/event/orienteering/save/participants") {
+            setBody(requests)
+        }.body<CommonModel<List<OrienteeringParticipant>>>()
+    }
+
     suspend fun deleteParticipant(id: String): ApiResult<Unit> = safeApiCallUnit {
         authClient.delete("$BASE_URL/event/orienteering/participants/$id")
             .body<CommonModel<Unit?>>()

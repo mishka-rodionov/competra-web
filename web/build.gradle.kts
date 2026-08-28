@@ -32,6 +32,9 @@ kotlin {
                 implementation(libs.koin.compose)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.serialization)
+                // Парсинг .xlsx на клиенте (импорт результатов прошедших соревнований) —
+                // формат бинарный (ZIP+XML), браузерный DOMParser не подходит.
+                implementation(npm("xlsx", "0.18.5"))
             }
         }
     }

@@ -51,6 +51,7 @@ import org.koin.compose.koinInject
 fun ManagementPage(
     modifier: Modifier = Modifier,
     onCreateClick: () -> Unit,
+    onCreatePastClick: () -> Unit,
     onManageClick: (OrienteeringCompetition) -> Unit,
     onLoginSuccess: () -> Unit,
 ) {
@@ -92,6 +93,12 @@ fun ManagementPage(
                 title = { Text("Управление") },
                 actions = {
                     if (isLoggedIn) {
+                        OutlinedButton(
+                            onClick = onCreatePastClick,
+                            modifier = Modifier.padding(end = 8.dp),
+                        ) {
+                            Text("+ Прошедшее")
+                        }
                         Button(
                             onClick = onCreateClick,
                             modifier = Modifier.padding(end = 8.dp),

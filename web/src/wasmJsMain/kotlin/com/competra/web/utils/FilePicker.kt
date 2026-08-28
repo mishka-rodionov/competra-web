@@ -71,3 +71,11 @@ fun pickBinaryFile(accept: String, onPicked: (fileName: String, contentType: Str
  */
 fun pickDistanceMapFile(onPicked: (fileName: String, contentType: String, bytes: ByteArray) -> Unit) =
     pickBinaryFile(".png,.jpg,.jpeg", onPicked)
+
+/**
+ * Выбор Excel-файла (протокол результатов прошедшего соревнования). Отдаёт base64 напрямую
+ * (а не декодированный ByteArray, как [pickBinaryFile]) — он передаётся as-is в SheetJS
+ * ([parseResultsExcel]), которая умеет читать base64 без промежуточного декодирования в Kotlin.
+ */
+fun pickExcelFile(onPicked: (fileName: String, base64: String) -> Unit) =
+    jsPickBinaryFile(".xlsx") { name, _, base64 -> onPicked(name, base64) }

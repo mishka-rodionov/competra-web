@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
+import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.RatingRepository
 import com.competra.domain.models.Competition
@@ -53,10 +54,17 @@ fun AddCompetitionToRatingPage(
     alreadyAddedCompetitionIds: Set<String>,
     onBack: () -> Unit,
     onAdded: (competitionId: String, suggestions: List<RatingGroupMappingSuggestion>) -> Unit,
+    onLoginSuccess: () -> Unit,
 ) {
     val competitionRepo: CompetitionRepository = koinInject()
     val ratingRepo: RatingRepository = koinInject()
+    val tokenStorage: TokenStorage = koinInject()
     val scope = rememberCoroutineScope()
+
+    if (!tokenStorage.isLoggedIn()) {
+        LoginPage(onLoginSuccess = onLoginSuccess)
+        return
+    }
 
     var competitions by remember { mutableStateOf<List<Competition>>(emptyList()) }
     var page by remember { mutableStateOf(0) }

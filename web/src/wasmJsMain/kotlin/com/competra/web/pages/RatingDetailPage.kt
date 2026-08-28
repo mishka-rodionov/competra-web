@@ -1,6 +1,7 @@
 package com.competra.web.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,23 +10,28 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -83,6 +89,7 @@ fun RatingDetailPage(
     var standingsLoading by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showPointsInfo by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableStateOf(0) }
 
     suspend fun reload() {
@@ -145,6 +152,10 @@ fun RatingDetailPage(
             },
             dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена") } },
         )
+    }
+
+    if (showPointsInfo) {
+        RatingPointsInfoDialog(onDismiss = { showPointsInfo = false })
     }
 
     Scaffold(
@@ -214,6 +225,28 @@ fun RatingDetailPage(
                                 text = { Text(group.title) },
                             )
                         }
+                    }
+                }
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showPointsInfo = true }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            "Как начисляются очки",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
 
@@ -374,4 +407,70 @@ private fun startsCountLabel(count: Int): String {
         mod10 in 2..4 -> "старта"
         else -> "стартов"
     }
+}
+
+/** Таблица очков по месту, соответствует RatingPointsTable на бэкенде (основана на таблице IOF World Cup). */
+private val fixedRatingPoints = listOf(
+    1 to 100, 2 to 80, 3 to 60, 4 to 50, 5 to 45,
+    6 to 40, 7 to 37, 8 to 35, 9 to 33,
+)
+
+@Composable
+private fun RatingPointsInfoDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Как начисляются очки") },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    "За каждый старт, добавленный в рейтинг, участник получает очки по месту, занятому в своей группе зачёта. Результат в рейтинге — сумма очков за все старты.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Место",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "Очки",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                fixedRatingPoints.forEach { (place, points) ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Text("$place", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text("$points", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    }
+                }
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text("10–40", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text("41 − место", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Text(
+                    "С 41-го места очки не начисляются.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    "Если несколько участников набрали одинаковую сумму очков, они делят место — например, при двух третьих местах следующий участник получает пятое.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Понятно") }
+        },
+    )
 }

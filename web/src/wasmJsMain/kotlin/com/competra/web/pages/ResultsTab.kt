@@ -131,7 +131,7 @@ fun ResultsTab(
         }
         items(nonEmptyGroupIds) { groupId ->
             val groupResults = (resultsByGroup[groupId] ?: emptyList())
-                .sortedWith(compareBy(nullsLast()) { it.rank })
+                .sortedWith(compareBy(nullsLast()) { if (it.status == "DSQ") null else it.rank })
             val groupTitle = groupNamesById[groupId] ?: "Группа $groupId"
             val distanceId = groups.firstOrNull { it.groupId == groupId }?.distanceId
 

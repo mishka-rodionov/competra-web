@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
+import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.ClubRepository
 import com.competra.domain.models.ClubJoinRequest
 import kotlinx.coroutines.launch
@@ -39,9 +40,15 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClubJoinRequestsPage(clubId: String, onBack: () -> Unit) {
+fun ClubJoinRequestsPage(clubId: String, onBack: () -> Unit, onLoginSuccess: () -> Unit) {
     val repo: ClubRepository = koinInject()
+    val tokenStorage: TokenStorage = koinInject()
     val scope = rememberCoroutineScope()
+
+    if (!tokenStorage.isLoggedIn()) {
+        LoginPage(onLoginSuccess = onLoginSuccess)
+        return
+    }
 
     var requests by remember { mutableStateOf<List<ClubJoinRequest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }

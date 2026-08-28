@@ -125,6 +125,7 @@ fun ClubsListPage(
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
                     value = query,
@@ -133,7 +134,9 @@ fun ClubsListPage(
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
-                Button(onClick = onCreateClick) { Text("+ Создать") }
+                if (isLoggedIn) {
+                    Button(onClick = onCreateClick) { Text("+ Создать") }
+                }
             }
 
             error?.let {

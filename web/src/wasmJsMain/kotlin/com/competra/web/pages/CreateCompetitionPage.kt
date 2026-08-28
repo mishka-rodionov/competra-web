@@ -128,6 +128,7 @@ private val REG_END_MODE_OPTIONS = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateCompetitionPage(
+    isPastEvent: Boolean = false,
     onBack: () -> Unit,
     onCreated: (OrienteeringCompetition) -> Unit,
 ) {
@@ -172,6 +173,7 @@ fun CreateCompetitionPage(
     var feeAmount by remember { mutableStateOf("") }
 
     // --- Шаг 3: Организатор ---
+    var organizerName by remember { mutableStateOf("") }
     var contactPhone by remember { mutableStateOf("") }
     var contactEmail by remember { mutableStateOf("") }
     var website by remember { mutableStateOf("") }
@@ -210,8 +212,8 @@ fun CreateCompetitionPage(
 
     val nextEnabled = when (step) {
         0 -> title.isNotBlank() && startDateMillis != null && zoneId.isNotBlank()
-        3 -> distances.isNotEmpty() || importXmlBytes != null
-        4 -> groups.isNotEmpty()
+        3 -> distances.isNotEmpty() || importXmlBytes != null || isPastEvent
+        4 -> groups.isNotEmpty() || isPastEvent
         else -> true
     }
 
@@ -235,13 +237,14 @@ fun CreateCompetitionPage(
                     description = description.trimOrNull(),
                     address = address.trimOrNull(),
                     coordinates = if (latitude != null && longitude != null) Coordinates(latitude!!, longitude!!) else null,
-                    status = if (regStart == null) "REGISTRATION_OPEN" else "CREATED",
+                    status = if (isPastEvent) "FINISHED" else if (regStart == null) "REGISTRATION_OPEN" else "CREATED",
                     registrationStart = regStart,
                     registrationEnd = regEnd,
                     maxParticipants = maxParticipants.toIntOrNull(),
                     feeAmount = feeAmount.toDoubleOrNull(),
                     feeCurrency = if (feeAmount.isNotBlank()) "RUB" else null,
                     mainOrganizerId = currentUserId,
+                    organizerName = organizerName.trimOrNull(),
                     contactEmail = contactEmail.trimOrNull(),
                     contactPhone = contactPhone.trimOrNull(),
                     website = website.trimOrNull(),
@@ -351,7 +354,9 @@ fun CreateCompetitionPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Создать · ${stepTitles[step]} (${step + 1}/5)") },
+                title = {
+                    Text("${if (isPastEvent) "Прошедшее" else "Создать"} · ${stepTitles[step]} (${step + 1}/5)")
+                },
                 navigationIcon = {
                     IconButton(onClick = { goBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
@@ -429,6 +434,7 @@ fun CreateCompetitionPage(
                     feeAmount = feeAmount, onFee = { feeAmount = it },
                 )
                 2 -> organizerStep(
+                    organizerName = organizerName, onOrganizerName = { organizerName = it },
                     contactPhone = contactPhone, onPhone = { contactPhone = it },
                     contactEmail = contactEmail, onEmail = { contactEmail = it },
                     website = website, onWebsite = { website = it },
@@ -439,6 +445,7 @@ fun CreateCompetitionPage(
                     distances = distances,
                     importXmlName = importXmlName,
                     importedPreviews = importedPreviews,
+                    isPastEvent = isPastEvent,
                     onAdd = { showDistanceDialog = true },
                     onRemove = { idx -> distances = distances.filterIndexed { i, _ -> i != idx } },
                     onPickXml = {
@@ -450,7 +457,13 @@ fun CreateCompetitionPage(
                     },
                     onClearXml = { importXmlName = null; importXmlBytes = null; importedPreviews = emptyList() },
                 )
-                4 -> groupsStep(groups = groups, distanceOptions = distanceOptions, onAdd = { showGroupDialog = true }, onRemove = { idx -> groups = groups.filterIndexed { i, _ -> i != idx } })
+                4 -> groupsStep(
+                    groups = groups,
+                    distanceOptions = distanceOptions,
+                    isPastEvent = isPastEvent,
+                    onAdd = { showGroupDialog = true },
+                    onRemove = { idx -> groups = groups.filterIndexed { i, _ -> i != idx } },
+                )
             }
 
             error?.let { err ->
@@ -667,6 +680,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.registrationStep(
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.organizerStep(
+    organizerName: String, onOrganizerName: (String) -> Unit,
     contactPhone: String, onPhone: (String) -> Unit,
     contactEmail: String, onEmail: (String) -> Unit,
     website: String, onWebsite: (String) -> Unit,
@@ -674,6 +688,20 @@ private fun androidx.compose.foundation.lazy.LazyListScope.organizerStep(
     mapUrl: String, onMap: (String) -> Unit,
 ) {
     sectionTitle("Контакты организатора")
+    item {
+        OutlinedTextField(
+            value = organizerName, onValueChange = onOrganizerName,
+            label = { Text("Организатор (ФИО)") },
+            modifier = Modifier.fillMaxWidth(), singleLine = true,
+        )
+    }
+    item {
+        Text(
+            "Не обязательно должен быть зарегистрирован в системе — просто отображается на странице соревнования.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     item {
         OutlinedTextField(
             value = contactPhone, onValueChange = onPhone,
@@ -718,6 +746,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
     distances: List<PendingDistance>,
     importXmlName: String?,
     importedPreviews: List<XmlCoursePreview>,
+    isPastEvent: Boolean,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
     onPickXml: () -> Unit,
@@ -726,7 +755,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
     sectionTitle("Дистанции")
     item {
         Text(
-            "Добавьте хотя бы одну дистанцию — её можно будет выбрать для групп на следующем шаге.",
+            if (isPastEvent) "Можно пропустить, если детали дистанций неизвестны."
+            else "Добавьте хотя бы одну дистанцию — её можно будет выбрать для групп на следующем шаге.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -809,10 +839,21 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
 private fun androidx.compose.foundation.lazy.LazyListScope.groupsStep(
     groups: List<PendingGroup>,
     distanceOptions: List<Pair<Int, String>>,
+    isPastEvent: Boolean,
     onAdd: () -> Unit,
     onRemove: (Int) -> Unit,
 ) {
     sectionTitle("Группы участников")
+    if (isPastEvent) {
+        item {
+            Text(
+                "Можно пропустить — группы, участники и результаты можно будет создать одним " +
+                    "действием при импорте результатов из Excel на вкладке «Результаты».",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
     if (groups.isEmpty()) {
         item { Text("Пока нет групп", color = MaterialTheme.colorScheme.onSurfaceVariant) }
     } else {

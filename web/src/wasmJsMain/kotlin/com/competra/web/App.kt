@@ -38,6 +38,7 @@ import com.competra.web.pages.CreateCompetitionPage
 import com.competra.web.pages.DiaryListPage
 import com.competra.web.pages.GroupMappingPage
 import com.competra.web.pages.GroupSplitsTablePage
+import com.competra.web.pages.ImportPastResultsReviewPage
 import com.competra.web.pages.ImportResultsReviewPage
 import com.competra.web.pages.ManageCompetitionPage
 import com.competra.web.pages.ManagementPage
@@ -57,19 +58,25 @@ import com.competra.web.pages.WorkoutEditorPage
 import com.competra.web.pages.WorkoutTrackPage
 import com.competra.web.theme.CompetiraTheme
 import com.competra.web.utils.ImportResultsDiff
+import com.competra.web.utils.PastResultsImportPlan
 import com.competra.web.utils.isDebugEnvironment
 
 sealed class Page {
     data object Competitions : Page()
     data class CompetitionDetail(val competitionId: String, val selectedTab: Int = 0) : Page()
     data object Management : Page()
-    data object CreateCompetition : Page()
+    data class CreateCompetition(val isPastEvent: Boolean = false) : Page()
     data class ManageCompetition(val competition: OrienteeringCompetition, val initialTab: Int = 0) : Page()
     data class ImportResultsReview(
         val competition: OrienteeringCompetition,
         val diff: ImportResultsDiff,
         val participants: List<OrienteeringParticipant>,
         val currentResults: List<OrienteeringResult>,
+    ) : Page()
+    data class ImportPastResultsReview(
+        val competition: OrienteeringCompetition,
+        val plan: PastResultsImportPlan,
+        val existingResults: List<OrienteeringResult>,
     ) : Page()
     data object Profile : Page()
     data object ProfileEditor : Page()
@@ -156,8 +163,9 @@ fun App(initialPage: Page = Page.Competitions) {
                 onBack = { page = Page.CompetitionDetail(current.competitionId, selectedTab = current.fromTab) },
             )
             is Page.CreateCompetition -> CreateCompetitionPage(
+                isPastEvent = current.isPastEvent,
                 onBack = { page = Page.Management },
-                onCreated = { competition -> page = Page.ManageCompetition(competition) },
+                onCreated = { competition -> page = Page.ManageCompetition(competition, initialTab = if (current.isPastEvent) 4 else 0) },
             )
             is Page.ManageCompetition -> ManageCompetitionPage(
                 competition = current.competition,
@@ -166,6 +174,9 @@ fun App(initialPage: Page = Page.Competitions) {
                 onImportResultsReview = { diff, participants, results ->
                     page = Page.ImportResultsReview(current.competition, diff, participants, results)
                 },
+                onImportPastResultsReview = { plan, existingResults ->
+                    page = Page.ImportPastResultsReview(current.competition, plan, existingResults)
+                },
             )
             is Page.ImportResultsReview -> ImportResultsReviewPage(
                 competition = current.competition,
@@ -173,6 +184,13 @@ fun App(initialPage: Page = Page.Competitions) {
                 currentResults = current.currentResults,
                 diff = current.diff,
                 onBack = { page = Page.ManageCompetition(current.competition, initialTab = 4) },
+            )
+            is Page.ImportPastResultsReview -> ImportPastResultsReviewPage(
+                competition = current.competition,
+                plan = current.plan,
+                existingResults = current.existingResults,
+                onBack = { page = Page.ManageCompetition(current.competition, initialTab = 4) },
+                onImported = { page = Page.ManageCompetition(current.competition, initialTab = 4) },
             )
             is Page.ProfileEditor -> ProfileEditorPage(
                 onBack = { page = Page.Profile },
@@ -225,6 +243,9 @@ fun App(initialPage: Page = Page.Competitions) {
                 onAdded = { competitionId, suggestions ->
                     page = Page.GroupMapping(current.ratingId, competitionId, current.ratingGroups, suggestions)
                 },
+                onLoginSuccess = {
+                    page = Page.AddCompetitionToRating(current.ratingId, current.alreadyAddedCompetitionIds, current.ratingGroups)
+                },
             )
             is Page.GroupMapping -> GroupMappingPage(
                 ratingId = current.ratingId,
@@ -237,6 +258,7 @@ fun App(initialPage: Page = Page.Competitions) {
             is Page.ClubJoinRequests -> ClubJoinRequestsPage(
                 clubId = current.clubId,
                 onBack = { page = Page.ClubDetail(current.clubId) },
+                onLoginSuccess = { page = Page.ClubJoinRequests(current.clubId) },
             )
             is Page.MyJoinRequests -> MyJoinRequestsPage(
                 onBack = { page = Page.Clubs },
@@ -317,7 +339,8 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
             )
             is Page.Management -> ManagementPage(
                 modifier = Modifier.padding(padding),
-                onCreateClick = { onNavigate(Page.CreateCompetition) },
+                onCreateClick = { onNavigate(Page.CreateCompetition()) },
+                onCreatePastClick = { onNavigate(Page.CreateCompetition(isPastEvent = true)) },
                 onManageClick = { competition -> onNavigate(Page.ManageCompetition(competition)) },
                 onLoginSuccess = { onNavigate(Page.Competitions) },
             )

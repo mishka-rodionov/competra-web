@@ -64,8 +64,12 @@ import com.competra.web.components.TimeField
 import com.competra.web.components.TimeZoneField
 import com.competra.web.utils.DEFAULT_TIME_ZONE
 import com.competra.web.utils.ImportResultsDiff
+import com.competra.web.utils.PastResultsImportPlan
+import com.competra.web.utils.buildPastResultsPlan
 import com.competra.web.utils.buildResultsDiff
+import com.competra.web.utils.parseResultsExcel
 import com.competra.web.utils.parseResultsHtml
+import com.competra.web.utils.pickExcelFile
 import com.competra.web.utils.pickHtmlFile
 import com.competra.web.utils.utcMillisToZonedDate
 import com.competra.web.utils.utcMillisToZonedTime
@@ -93,6 +97,7 @@ fun ManageCompetitionPage(
     initialTab: Int = 0,
     onBack: () -> Unit,
     onImportResultsReview: (ImportResultsDiff, List<OrienteeringParticipant>, List<OrienteeringResult>) -> Unit,
+    onImportPastResultsReview: (PastResultsImportPlan, List<OrienteeringResult>) -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(initialTab) }
 
@@ -125,7 +130,11 @@ fun ManageCompetitionPage(
                     showImport = true,
                     isByChoice = competition.direction == "BY_CHOICE",
                 )
-                4 -> ResultsManageTab(competition = competition, onImportResultsReview = onImportResultsReview)
+                4 -> ResultsManageTab(
+                    competition = competition,
+                    onImportResultsReview = onImportResultsReview,
+                    onImportPastResultsReview = onImportPastResultsReview,
+                )
             }
         }
     }
@@ -158,6 +167,7 @@ private fun EditTab(competition: OrienteeringCompetition) {
     var registrationEndTime by remember { mutableStateOf(c.registrationEnd?.let { utcMillisToZonedTime(it, zoneId) } ?: "23:59") }
     var maxParticipants by remember { mutableStateOf(c.maxParticipants?.toString() ?: "") }
     var feeAmount by remember { mutableStateOf(c.feeAmount?.let { if (it > 0) it.toInt().toString() else "" } ?: "") }
+    var organizerName by remember { mutableStateOf(c.organizerName ?: "") }
     var contactEmail by remember { mutableStateOf(c.contactEmail ?: "") }
     var contactPhone by remember { mutableStateOf(c.contactPhone ?: "") }
     var website by remember { mutableStateOf(c.website ?: "") }
@@ -341,6 +351,15 @@ private fun EditTab(competition: OrienteeringCompetition) {
 
         item {
             OutlinedTextField(
+                value = organizerName,
+                onValueChange = { organizerName = it },
+                label = { Text("Организатор (ФИО)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
+        item {
+            OutlinedTextField(
                 value = contactEmail,
                 onValueChange = { contactEmail = it },
                 label = { Text("Email организатора") },
@@ -432,6 +451,7 @@ private fun EditTab(competition: OrienteeringCompetition) {
                                 feeAmount = feeAmount.toDoubleOrNull(),
                                 feeCurrency = if (feeAmount.isNotBlank()) "RUB" else c.feeCurrency,
                                 mainOrganizerId = c.mainOrganizerId,
+                                organizerName = organizerName.trimOrNull(),
                                 contactEmail = contactEmail.trimOrNull(),
                                 contactPhone = contactPhone.trimOrNull(),
                                 website = website.trimOrNull(),
@@ -783,14 +803,17 @@ private fun AddGroupDialog(
 private fun ResultsManageTab(
     competition: OrienteeringCompetition,
     onImportResultsReview: (ImportResultsDiff, List<OrienteeringParticipant>, List<OrienteeringResult>) -> Unit,
+    onImportPastResultsReview: (PastResultsImportPlan, List<OrienteeringResult>) -> Unit,
 ) {
     val competitionId = competition.competitionId
     val repo: ResultRepository = koinInject()
     val competitionRepo: CompetitionRepository = koinInject()
+    val groupRepo: GroupRepository = koinInject()
     val scope = rememberCoroutineScope()
 
     var results by remember { mutableStateOf<List<OrienteeringResult>>(emptyList()) }
     var participants by remember { mutableStateOf<List<OrienteeringParticipant>>(emptyList()) }
+    var groups by remember { mutableStateOf<List<ParticipantGroupDetail>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var resultsStatus by remember { mutableStateOf(competition.competition.resultsStatus) }
@@ -804,6 +827,10 @@ private fun ResultsManageTab(
         }
         when (val r = repo.getParticipants(competitionId)) {
             is ApiResult.Success -> participants = r.data
+            is ApiResult.Error -> {}
+        }
+        when (val r = groupRepo.getGroups(competitionId)) {
+            is ApiResult.Success -> groups = r.data
             is ApiResult.Error -> {}
         }
         loading = false
@@ -853,26 +880,45 @@ private fun ResultsManageTab(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Результаты", style = MaterialTheme.typography.titleSmall)
-            Button(
-                enabled = !loading,
-                onClick = {
-                    pickHtmlFile { _, content ->
-                        error = null
-                        val parsedRows = runCatching { parseResultsHtml(content) }.getOrNull()
-                        if (parsedRows.isNullOrEmpty()) {
-                            error = "Не удалось распознать файл — проверьте, что это HTML-протокол результатов."
-                            return@pickHtmlFile
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    enabled = !loading,
+                    onClick = {
+                        pickHtmlFile { _, content ->
+                            error = null
+                            val parsedRows = runCatching { parseResultsHtml(content) }.getOrNull()
+                            if (parsedRows.isNullOrEmpty()) {
+                                error = "Не удалось распознать файл — проверьте, что это HTML-протокол результатов."
+                                return@pickHtmlFile
+                            }
+                            val diff = buildResultsDiff(parsedRows, participants, results, competitionId)
+                            if (diff.changed.isEmpty() && diff.unmatched.isEmpty()) {
+                                error = "В файле не найдено ни одной строки результатов."
+                                return@pickHtmlFile
+                            }
+                            onImportResultsReview(diff, participants, results)
                         }
-                        val diff = buildResultsDiff(parsedRows, participants, results, competitionId)
-                        if (diff.changed.isEmpty() && diff.unmatched.isEmpty()) {
-                            error = "В файле не найдено ни одной строки результатов."
-                            return@pickHtmlFile
+                    },
+                ) {
+                    Text("Импорт из HTML")
+                }
+                OutlinedButton(
+                    enabled = !loading,
+                    onClick = {
+                        pickExcelFile { _, base64 ->
+                            error = null
+                            val parsedFile = runCatching { parseResultsExcel(base64) }.getOrNull()
+                            if (parsedFile == null || parsedFile.rows.isEmpty()) {
+                                error = "Не удалось распознать файл — проверьте формат столбцов Excel."
+                                return@pickExcelFile
+                            }
+                            val plan = buildPastResultsPlan(parsedFile, groups, participants)
+                            onImportPastResultsReview(plan, results)
                         }
-                        onImportResultsReview(diff, participants, results)
-                    }
-                },
-            ) {
-                Text("Импорт из HTML")
+                    },
+                ) {
+                    Text("Импорт из Excel")
+                }
             }
         }
 
@@ -936,6 +982,7 @@ private fun com.competra.domain.models.Competition.toFields(resultsStatus: Strin
     feeAmount = feeAmount,
     feeCurrency = feeCurrency,
     mainOrganizerId = mainOrganizerId,
+    organizerName = organizerName,
     contactPhone = contactPhone,
     contactEmail = contactEmail,
     website = website,

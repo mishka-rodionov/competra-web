@@ -432,13 +432,19 @@ private fun ParticipantsProgress(registered: Int, max: Int) {
 /**
  * Строка организатора: название клуба и/или ФИО контактного лица.
  * Формат: "Клуб · Фамилия Имя Отчество" — части, которых нет, опускаются.
+ *
+ * Свободный текст [CompetitionDetail.organizerName] (не привязан к аккаунту) имеет приоритет над
+ * именем аккаунта, на который ссылается mainOrganizerId — иначе он никогда бы не отображался: у
+ * прошедшего соревнования mainOrganizerId всегда указывает на создателя (того, кто вносил данные),
+ * а не на реального организатора события.
  */
 private fun buildOrganizerLine(organizerClubName: String?, detail: CompetitionDetail): String? {
     val personalName = listOfNotNull(detail.organizerLastName, detail.organizerFirstName, detail.organizerMiddleName)
         .filter { it.isNotBlank() }
         .joinToString(" ")
+    val displayName = detail.organizerName?.trim()?.takeIf { it.isNotBlank() } ?: personalName
 
-    val parts = listOfNotNull(organizerClubName, personalName.takeIf { it.isNotBlank() })
+    val parts = listOfNotNull(organizerClubName, displayName.takeIf { it.isNotBlank() })
     return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 

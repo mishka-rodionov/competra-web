@@ -31,6 +31,8 @@ data class Competition(
     @SerialName("registrationStart") val registrationStart: Long? = null,
     @SerialName("registrationEnd")   val registrationEnd: Long? = null,
     @SerialName("mainOrganizerId") val mainOrganizerId: String? = null,
+    /** Организатор произвольным текстом (ФИО) — независим от [mainOrganizerId], не требует аккаунта. */
+    @SerialName("organizerName")   val organizerName: String? = null,
     @SerialName("website")         val website: String? = null,
     @SerialName("regulationUrl")   val regulationUrl: String? = null,
     @SerialName("mapUrl")          val mapUrl: String? = null,
@@ -79,6 +81,8 @@ data class CompetitionDetail(
     @SerialName("organizerFirstName")  val organizerFirstName: String? = null,
     @SerialName("organizerLastName")   val organizerLastName: String? = null,
     @SerialName("organizerMiddleName") val organizerMiddleName: String? = null,
+    /** Организатор произвольным текстом — независим от аккаунта, привязанного к mainOrganizerId. */
+    @SerialName("organizerName")       val organizerName: String? = null,
     @SerialName("startTime")           val startTime: Long? = null,
     @SerialName("website")             val website: String? = null,
     @SerialName("regulationUrl")       val regulationUrl: String? = null,
@@ -139,6 +143,8 @@ data class CompetitionFields(
     @SerialName("feeAmount")          val feeAmount: Double? = null,
     @SerialName("feeCurrency")        val feeCurrency: String? = null,
     @SerialName("mainOrganizerId")    val mainOrganizerId: String? = null,
+    /** Организатор произвольным текстом (ФИО) — независим от [mainOrganizerId], не требует аккаунта. */
+    @SerialName("organizerName")      val organizerName: String? = null,
     @SerialName("contactPhone")       val contactPhone: String? = null,
     @SerialName("contactEmail")       val contactEmail: String? = null,
     @SerialName("website")            val website: String? = null,
