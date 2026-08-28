@@ -649,8 +649,7 @@ internal fun sportLabel(kind: String) = when (kind) {
 }
 
 private fun genderLabel(gender: String) = when (gender) {
-    "MALE" -> "Мужчины"
-    "FEMALE" -> "Женщины"
-    "MIXED" -> "Смешанные"
+    "M" -> "Мужчины"
+    "F" -> "Женщины"
     else -> gender
 }
