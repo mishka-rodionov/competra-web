@@ -99,7 +99,7 @@ fun ProfilePage(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Аккаунт и связанные с ним данные будут удалены безвозвратно. Это действие необратимо.")
-                    deleteError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    deleteError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
                 }
             },
             confirmButton = {
@@ -174,13 +174,13 @@ fun ProfilePage(
                             )
                             Text(
                                 profile!!.email,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             profile!!.birthDate?.let {
                                 Text(
                                     "Дата рождения: ${it.toLocaleDateString()}",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -209,7 +209,7 @@ fun ProfilePage(
                 item {
                     Text(
                         "Нет предстоящих стартов",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -265,11 +265,11 @@ private fun UpcomingCompetitionCard(competition: OrienteeringCompetition, onClic
             Text(competition.competition.title, style = MaterialTheme.typography.titleSmall)
             Text(
                 competition.competition.startDate.toLocaleDateString(),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             competition.competition.address?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -297,7 +297,7 @@ private fun UnauthenticatedProfile(
                 Text("Вы не вошли в аккаунт", style = MaterialTheme.typography.titleLarge)
                 Text(
                     "Войдите, чтобы видеть свои регистрации и управлять соревнованиями",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Button(

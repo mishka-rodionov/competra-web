@@ -289,7 +289,7 @@ fun DistanceMapView(
             // здесь ранее коррелировал с зависанием страницы на этом Skiko-канвасе.
             Text(
                 "Загрузка карты — файл большой, может занять минуту",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(12.dp)

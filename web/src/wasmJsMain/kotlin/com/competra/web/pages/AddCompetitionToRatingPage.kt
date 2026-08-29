@@ -165,7 +165,7 @@ fun AddCompetitionToRatingPage(
                                 Text(competition.title, style = MaterialTheme.typography.titleSmall)
                                 Text(
                                     competition.startDate.toLocaleDateString(),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }

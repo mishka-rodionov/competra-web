@@ -118,7 +118,7 @@ fun MyJoinRequestsPage(onBack: () -> Unit, onClubClick: (String) -> Unit) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 clubNames[request.clubId] ?: "Клуб",
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyLarge,
                             )
                         }
                         Text(

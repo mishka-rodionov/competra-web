@@ -174,7 +174,7 @@ fun ImportResultsReviewPage(
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
                     "Изменений: ${diff.changed.size} • Не распознано: ${diff.unmatched.size}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
                 if (diff.unmatched.isNotEmpty()) {
                     TextButton(onClick = { showUnmatched = !showUnmatched }) {
@@ -183,13 +183,13 @@ fun ImportResultsReviewPage(
                     if (showUnmatched) {
                         Text(
                             "Стартовый номер не найден среди участников — эти строки будут пропущены:",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         diff.unmatched.forEach { row ->
                             Text(
                                 "№${row.startNumber} ${row.fullName}",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 2.dp),
                             )
@@ -206,7 +206,7 @@ fun ImportResultsReviewPage(
                             "Результаты уже опубликованы как официальные — импорт перезапишет их для всех участников.",
                             modifier = Modifier.padding(8.dp),
                             color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -225,7 +225,7 @@ fun ImportResultsReviewPage(
                     item {
                         Text(
                             "Нет данных для отображения",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 16.dp),
                         )
@@ -326,25 +326,25 @@ private fun ReviewResultRow(
             }
             Text(
                 display?.rank?.toString() ?: "—",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(0.4f),
             )
             Column(modifier = Modifier.weight(if (isByChoice) 1.6f else 2f)) {
-                Text("${row.participant.lastName} ${row.participant.firstName}", style = MaterialTheme.typography.bodyMedium)
+                Text("${row.participant.lastName} ${row.participant.firstName}", style = MaterialTheme.typography.bodyLarge)
                 row.participant.startNumber?.let {
-                    Text("№$it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("№$it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             if (isByChoice) {
                 Text(
                     display?.totalScore?.toString() ?: "—",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(0.7f),
                 )
             }
             Text(
                 display?.totalTime?.let { formatTime(it) } ?: "—",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f),
             )
             Text(
@@ -357,7 +357,7 @@ private fun ReviewResultRow(
         if (highlighted) {
             Text(
                 change.changeSummary,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 48.dp),
             )

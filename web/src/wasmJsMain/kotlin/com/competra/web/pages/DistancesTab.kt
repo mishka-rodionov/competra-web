@@ -131,7 +131,7 @@ fun DistancesTab(competitionId: String?, showImport: Boolean = false, isByChoice
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     if (showImport) "Нет дистанций. Создайте или импортируйте из Mapper." else "Дистанции не добавлены",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -219,7 +219,7 @@ private fun CreateDistanceDialog(
                 if (isByChoice) {
                     Text(
                         "Формат «по выбору»: номер:баллы (например 32:5). Без баллов — по умолчанию 2.",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -239,7 +239,7 @@ private fun CreateDistanceDialog(
                     singleLine = true,
                 )
                 error?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
@@ -352,7 +352,7 @@ internal fun DistanceCard(
                     Icon(Icons.Filled.OpenInFull, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         "Открыть карту дистанции",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -441,7 +441,7 @@ private fun AttachMapDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "Загружайте карту после окончания соревнования — иначе участники смогут увидеть её до старта.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 OutlinedButton(onClick = {
@@ -454,11 +454,11 @@ private fun AttachMapDialog(
                     Text("Выбрать файл карты (PNG/JPG)")
                 }
                 fileName?.let {
-                    Text("Выбран файл: $it", style = MaterialTheme.typography.bodySmall)
+                    Text("Выбран файл: $it", style = MaterialTheme.typography.bodyMedium)
                 }
                 Text(
                     "Координаты углов (из диалога экспорта в mapper — «Copy WGS84 map corners for Competra»):",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
@@ -502,11 +502,11 @@ private fun AttachMapDialog(
                             "bottom-right lng".takeIf { bottomRightLng.toDoubleOrNull() == null },
                         ).joinToString(", "),
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 error?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
@@ -566,7 +566,7 @@ private fun AttachMapDialog(
 @Composable
 private fun DistanceStat(label: String, value: String) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
     }
 }

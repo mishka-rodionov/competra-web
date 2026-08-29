@@ -53,7 +53,7 @@ fun PrivacyPolicyPage(onBack: () -> Unit) {
         ) {
             Text(
                 "Действует с $EFFECTIVE_DATE. Применяется к мобильному приложению Competra (Google Play, RuStore) и веб-версии competra.ru.",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -277,14 +277,14 @@ private typealias ColumnScopeContent = @Composable () -> Unit
 
 @Composable
 private fun Paragraph(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium)
+    Text(text, style = MaterialTheme.typography.bodyLarge)
 }
 
 @Composable
 private fun BulletList(vararg items: String) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         items.forEach { item ->
-            Text("•  $item", style = MaterialTheme.typography.bodyMedium)
+            Text("•  $item", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

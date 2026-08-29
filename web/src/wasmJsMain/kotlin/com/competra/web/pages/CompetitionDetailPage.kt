@@ -259,14 +259,14 @@ private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null
                 detail.startTime?.let {
                     Text(
                         "Старт в ${utcMillisToZonedTime(it, zone)}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 detail.endDate?.takeIf { it != detail.startDate }?.let {
                     Text(
                         "Окончание: ${it.toLocaleDateString()}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -313,7 +313,7 @@ private fun InfoTab(detail: CompetitionDetail, organizerClubName: String? = null
         detail.description?.takeIf { it.isNotBlank() }?.let { desc ->
             item {
                 InfoSectionCard(icon = Icons.Filled.Description, title = "Описание") {
-                    Text(desc, style = MaterialTheme.typography.bodyMedium)
+                    Text(desc, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
@@ -380,8 +380,8 @@ private fun Field(label: String, value: String, icon: ImageVector? = null) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
         icon?.let { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
@@ -395,8 +395,8 @@ private fun LinkField(label: String, value: String, url: String, icon: ImageVect
     ) {
         icon?.let { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)) }
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
         }
         Icon(
             Icons.AutoMirrored.Filled.OpenInNew,
@@ -413,10 +413,10 @@ private fun ParticipantsProgress(registered: Int, max: Int) {
     val isFull = registered >= max
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Участников", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Участников", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 "$registered из $max",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 color = if (isFull) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -468,7 +468,7 @@ private fun GroupsTab(
                 Text(
                     "Вы зарегистрированы",
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
                 OutlinedButton(onClick = onCancelRegistration) {
@@ -478,7 +478,7 @@ private fun GroupsTab(
         }
         registerError?.let { err ->
             item {
-                Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
         }
         if (detail.participantGroups.isEmpty()) {
@@ -533,14 +533,14 @@ private fun GroupCard(
                     )
                 }
             }
-            group.gender?.let { Text(genderLabel(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            group.gender?.let { Text(genderLabel(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (group.minAge != null || group.maxAge != null) {
                 val ageRange = when {
                     group.minAge != null && group.maxAge != null -> "${group.minAge}–${group.maxAge} лет"
                     group.minAge != null -> "от ${group.minAge} лет"
                     else -> "до ${group.maxAge} лет"
                 }
-                Text(ageRange, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(ageRange, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             group.distanceName?.let {
                 val distInfo = buildString {
@@ -549,10 +549,10 @@ private fun GroupCard(
                     group.distanceClimbMeters?.let { c -> if (c > 0) append(" · набор $c м") }
                     group.distanceControlsCount?.let { n -> append(" · $n КП") }
                 }
-                Text(distInfo, style = MaterialTheme.typography.bodySmall)
+                Text(distInfo, style = MaterialTheme.typography.bodyMedium)
             }
             group.distanceDescription?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (isLoggedIn && registrationOpen && !anyRegistered) {
                 val isFull = spotsLeft != null && spotsLeft <= 0
@@ -596,7 +596,7 @@ private fun RegistrationDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (hasProfileName) {
-                    Text("Регистрация от имени:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Регистрация от имени:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${profile!!.lastName} ${profile.firstName}", style = MaterialTheme.typography.bodyLarge)
                 } else {
                     OutlinedTextField(
@@ -614,7 +614,7 @@ private fun RegistrationDialog(
                         singleLine = true,
                     )
                 }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
             }
         },
         confirmButton = {

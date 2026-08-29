@@ -185,15 +185,15 @@ private fun StartProtocolRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(participant.startNumber ?: "—", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.5f))
+        Text(participant.startNumber ?: "—", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.5f))
         Column(modifier = Modifier.weight(2f)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium)
+            Text(name, style = MaterialTheme.typography.bodyLarge)
             participant.commandName?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Text(timeStr, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        Text(minuteStr, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(timeStr, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(minuteStr, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
     }
 }
 

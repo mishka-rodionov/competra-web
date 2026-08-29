@@ -120,7 +120,7 @@ private fun WorkoutCard(workout: Workout, onClick: () -> Unit) {
             }
             val dateMillis = workout.startedAt ?: workout.scheduledDate
             dateMillis?.let {
-                Text(it.toLocaleDateString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it.toLocaleDateString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (workout.status == "COMPLETED") {
                 val parts = listOfNotNull(
@@ -128,7 +128,7 @@ private fun WorkoutCard(workout: Workout, onClick: () -> Unit) {
                     workout.durationSeconds?.let { formatWorkoutDuration(it) },
                 )
                 if (parts.isNotEmpty()) {
-                    Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

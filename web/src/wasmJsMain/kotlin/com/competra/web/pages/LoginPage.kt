@@ -68,12 +68,12 @@ fun LoginPage(onLoginSuccess: () -> Unit, onPrivacyClick: () -> Unit = {}) {
                         Checkbox(checked = consentChecked, onCheckedChange = { consentChecked = it })
                         Text(
                             "Согласен с обработкой персональных данных",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                     Text(
                         "Политика конфиденциальности",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.fillMaxWidth().clickable(onClick = onPrivacyClick),
                     )
@@ -93,7 +93,7 @@ fun LoginPage(onLoginSuccess: () -> Unit, onPrivacyClick: () -> Unit = {}) {
                     ) { Text("Получить код") }
                 }
                 LoginStep.Code -> {
-                    Text("Код отправлен на $email", style = MaterialTheme.typography.bodyMedium)
+                    Text("Код отправлен на $email", style = MaterialTheme.typography.bodyLarge)
                     OutlinedTextField(
                         value = code,
                         onValueChange = { code = it; error = null },

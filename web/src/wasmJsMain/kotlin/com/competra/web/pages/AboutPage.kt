@@ -43,7 +43,7 @@ fun AboutPage(onBack: () -> Unit) {
             Text("Competra", style = MaterialTheme.typography.headlineSmall)
             Text(
                 "Сервис для организации и участия в соревнованиях по спортивному ориентированию.",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -58,6 +58,6 @@ fun AboutPage(onBack: () -> Unit) {
 private fun AboutRow(label: String, value: String) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }

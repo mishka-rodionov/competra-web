@@ -105,10 +105,10 @@ fun ParticipantSplitsPage(
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("${p.lastName} ${p.firstName}".trim(), style = MaterialTheme.typography.titleMedium)
                         p.startNumber?.let {
-                            Text("№$it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("№$it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         p.groupName?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -142,7 +142,7 @@ fun ParticipantSplitsPage(
                 item {
                     Text(
                         "Сплиты отсутствуют",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
                     )
@@ -166,9 +166,9 @@ fun ParticipantSplitsPage(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(split.controlPoint.toString(), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.6f))
-                        Text(formatTime(legSeconds), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                        Text(formatTime(cumulSeconds), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text(split.controlPoint.toString(), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(0.6f))
+                        Text(formatTime(legSeconds), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Text(formatTime(cumulSeconds), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }

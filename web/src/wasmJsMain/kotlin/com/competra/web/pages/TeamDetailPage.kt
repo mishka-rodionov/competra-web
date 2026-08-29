@@ -159,8 +159,8 @@ fun TeamDetailPage(teamId: String, onBack: () -> Unit) {
 
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(sportLabel(t.sportType), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                actionError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                Text(sportLabel(t.sportType), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                actionError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
                 if (isClubAdmin) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { showEditDialog = true }) { Text("Редактировать") }
@@ -185,7 +185,7 @@ fun TeamDetailPage(teamId: String, onBack: () -> Unit) {
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("${member.lastName} ${member.firstName}".trim(), style = MaterialTheme.typography.bodyMedium)
+                                    Text("${member.lastName} ${member.firstName}".trim(), style = MaterialTheme.typography.bodyLarge)
                                     Text(teamRoleLabel(member.role), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 }
                                 val isSelf = member.userId == currentUserId
@@ -308,7 +308,7 @@ private fun AddTeamMemberDialog(
                                 .clickable { onAdd(member.id) }
                                 .padding(vertical = 10.dp),
                         ) {
-                            Text("${member.lastName} ${member.firstName}".trim(), style = MaterialTheme.typography.bodyMedium)
+                            Text("${member.lastName} ${member.firstName}".trim(), style = MaterialTheme.typography.bodyLarge)
                         }
                         HorizontalDivider()
                     }

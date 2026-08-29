@@ -278,25 +278,25 @@ private fun ResultRow(
     ) {
         Text(
             result.rank?.toString() ?: "—",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(0.4f),
         )
         Column(modifier = Modifier.weight(if (isByChoice) 1.6f else 2f)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium)
+            Text(name, style = MaterialTheme.typography.bodyLarge)
             participant?.startNumber?.let {
-                Text("№$it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("№$it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (isByChoice) {
             Text(
                 result.totalScore?.toString() ?: "—",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(0.7f),
             )
         }
         Text(
             timeStr,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f),
         )
         Text(

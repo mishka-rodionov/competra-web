@@ -100,7 +100,7 @@ fun WorkoutTrackPage(
                     )
                     Text(
                         if (parts.isNotEmpty()) parts.joinToString(" · ") else "Нет данных",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 }
             }

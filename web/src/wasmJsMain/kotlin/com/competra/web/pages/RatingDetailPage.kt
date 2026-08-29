@@ -296,7 +296,7 @@ fun RatingDetailPage(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(rc.competitionTitle, style = MaterialTheme.typography.bodyMedium)
+                                    Text(rc.competitionTitle, style = MaterialTheme.typography.bodyLarge)
                                     Text(
                                         rc.competitionStartDate.toLocaleDateString(),
                                         style = MaterialTheme.typography.labelSmall,
@@ -368,7 +368,7 @@ private fun RatingStandingRow(standing: RatingStanding) {
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(standing.displayName, style = MaterialTheme.typography.bodyMedium)
+                Text(standing.displayName, style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -427,7 +427,7 @@ private fun RatingPointsInfoDialog(onDismiss: () -> Unit) {
             ) {
                 Text(
                     "За каждый старт, добавленный в рейтинг, участник получает очки по месту, занятому в своей группе зачёта. Результат в рейтинге — сумма очков за все старты.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
 
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -447,24 +447,24 @@ private fun RatingPointsInfoDialog(onDismiss: () -> Unit) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 fixedRatingPoints.forEach { (place, points) ->
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                        Text("$place", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                        Text("$points", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text("$place", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Text("$points", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                     }
                 }
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Text("10–40", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text("41 − место", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text("10–40", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text("41 − место", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                 Text(
                     "С 41-го места очки не начисляются.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     "Если несколько участников набрали одинаковую сумму очков, они делят место — например, при двух третьих местах следующий участник получает пятое.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

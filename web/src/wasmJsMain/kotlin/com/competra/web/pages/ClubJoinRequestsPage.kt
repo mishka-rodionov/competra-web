@@ -104,7 +104,7 @@ fun ClubJoinRequestsPage(clubId: String, onBack: () -> Unit, onLoginSuccess: () 
                     ) {
                         Text(
                             "${request.lastName} ${request.firstName}".trim(),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f),
                         )
                         OutlinedButton(onClick = {

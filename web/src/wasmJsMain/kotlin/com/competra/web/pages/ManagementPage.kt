@@ -120,7 +120,7 @@ fun ManagementPage(
                     Text("Только для организаторов", style = MaterialTheme.typography.titleLarge)
                     Text(
                         "Войдите, чтобы создавать соревнования и управлять ими",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(onClick = { showLogin = true }, modifier = Modifier.fillMaxWidth()) {
@@ -154,7 +154,7 @@ fun ManagementPage(
                     Text("Нет соревнований", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Создайте первое соревнование",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(onClick = onCreateClick) { Text("Создать") }
@@ -185,7 +185,7 @@ fun ManagementPage(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("«${target.competition.title}» будет удалено безвозвратно.")
                     deleteError?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             },
@@ -249,11 +249,11 @@ private fun ManagedCompetitionCard(
             }
             Text(
                 c.startDate.toLocaleDateString(),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             c.address?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),

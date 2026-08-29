@@ -408,7 +408,7 @@ private fun EditTab(competition: OrienteeringCompetition) {
 
         error?.let { err ->
             item {
-                Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
         }
 
@@ -417,7 +417,7 @@ private fun EditTab(competition: OrienteeringCompetition) {
                 Text(
                     "Сохранено",
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
@@ -542,7 +542,7 @@ private fun GroupsTab(competition: OrienteeringCompetition) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     "Нет групп. Добавьте первую группу.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -592,7 +592,7 @@ private fun GroupCard(group: ParticipantGroupDetail, onDelete: () -> Unit) {
                 if (details.isNotEmpty()) {
                     Text(
                         details.joinToString("  •  "),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -759,7 +759,7 @@ private fun AddGroupDialog(
                 }
 
                 error?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
@@ -929,7 +929,7 @@ private fun ResultsManageTab(
         ) {
             Text(
                 if (resultsStatus == "OFFICIAL") "Статус: результаты официальные" else "Статус: результаты не опубликованы",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (resultsStatus != "OFFICIAL") {
@@ -950,7 +950,7 @@ private fun ResultsManageTab(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     "Результаты ещё не опубликованы. Их можно восстановить из ранее экспортированного HTML.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -958,7 +958,7 @@ private fun ResultsManageTab(
             val finished = results.count { it.status == "FINISHED" }
             Text(
                 "Всего результатов: ${results.size} (финишировали: $finished)",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(top = 12.dp),
             )
         }

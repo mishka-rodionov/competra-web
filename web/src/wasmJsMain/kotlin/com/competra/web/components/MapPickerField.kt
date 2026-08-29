@@ -150,7 +150,7 @@ fun MapPickerField(
 
         Text(
             "${formatCoord(centerLat)}, ${formatCoord(centerLon)}",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
         )
@@ -183,7 +183,7 @@ fun CoordinatesPickerField(
     Column(modifier = modifier) {
         Text(
             if (latitude != null && longitude != null) "${formatCoord(latitude)}, ${formatCoord(longitude)}" else "Не указаны",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
         )
         OutlinedButton(onClick = { showPicker = true }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
             Text(if (latitude != null) "Изменить на карте" else "Выбрать на карте")

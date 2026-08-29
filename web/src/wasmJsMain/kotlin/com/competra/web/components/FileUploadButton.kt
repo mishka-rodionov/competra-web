@@ -40,7 +40,7 @@ fun XmlImportField(
         }
         fileName?.let {
             Spacer(Modifier.height(4.dp))
-            Text("Загружен файл: $it", style = MaterialTheme.typography.bodySmall)
+            Text("Загружен файл: $it", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

@@ -214,14 +214,14 @@ fun ClubDetailPage(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 c.description?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.bodyMedium)
+                    Text(it, style = MaterialTheme.typography.bodyLarge)
                 }
                 Text(
                     "Участников: ${c.membersCount}",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                actionError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                actionError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (myMembership == null) {
@@ -238,7 +238,7 @@ fun ClubDetailPage(
                                 Text(if (myPendingRequest) "Заявка отправлена" else "Подать заявку")
                             }
                         } else {
-                            Text("Клуб не принимает заявки", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Клуб не принимает заявки", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
                         OutlinedButton(onClick = {
@@ -334,7 +334,7 @@ private fun MembersTab(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("${member.lastName} ${member.firstName}".trim(), style = MaterialTheme.typography.bodyMedium)
+                        Text("${member.lastName} ${member.firstName}".trim(), style = MaterialTheme.typography.bodyLarge)
                         Text(clubRoleLabel(member.role), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                     }
                     if (isFounder && member.userId != currentUserId) {
@@ -392,7 +392,7 @@ private fun TeamsTab(
                 items(teams, key = { it.id }) { team ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                            Text(team.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(team.name, style = MaterialTheme.typography.bodyLarge)
                             Text(
                                 "${sportLabel(team.sportType)} · ${team.membersCount} участников",
                                 style = MaterialTheme.typography.labelSmall,
@@ -434,7 +434,7 @@ private fun RatingsTab(
                 items(ratings, key = { it.id }) { rating ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                            Text(rating.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(rating.name, style = MaterialTheme.typography.bodyLarge)
                             Text(
                                 "Групп: ${rating.groups.size}",
                                 style = MaterialTheme.typography.labelSmall,

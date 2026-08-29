@@ -37,7 +37,7 @@ fun DebugErrorBanner(modifier: Modifier = Modifier) {
             ) {
                 Text(
                     "DEBUG: ${entry.message}",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.weight(1f),
                 )

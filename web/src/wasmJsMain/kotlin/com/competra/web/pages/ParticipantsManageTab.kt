@@ -213,15 +213,15 @@ private fun ParticipantManageCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "№${participant.startNumber ?: "—"}  ${participant.lastName} ${participant.firstName}".trim(),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
                 if (showGroupName) {
                     participant.groupName?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 participant.commandName?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             IconButton(onClick = onEdit) {

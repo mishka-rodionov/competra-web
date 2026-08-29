@@ -467,7 +467,7 @@ fun CreateCompetitionPage(
             }
 
             error?.let { err ->
-                item { Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                item { Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
             }
         }
     }
@@ -524,12 +524,12 @@ private fun DebugTestToolsCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "Тестовое соревнование",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                     Text(
                         "Скрыто из публичной ленты, видно только вам",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                 }
@@ -634,10 +634,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.registrationStep(
     item {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Открыть регистрацию сразу", style = MaterialTheme.typography.bodyMedium)
+                Text("Открыть регистрацию сразу", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     "Иначе укажите дату и время начала регистрации",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -698,7 +698,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.organizerStep(
     item {
         Text(
             "Не обязательно должен быть зарегистрирован в системе — просто отображается на странице соревнования.",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -757,17 +757,17 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
         Text(
             if (isPastEvent) "Можно пропустить, если детали дистанций неизвестны."
             else "Добавьте хотя бы одну дистанцию — её можно будет выбрать для групп на следующем шаге.",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
     item {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Импорт из Mapper (IOF XML)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                Text("Импорт из Mapper (IOF XML)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     "Выберите готовый XML-файл с дистанциями — он будет импортирован при создании соревнования.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (importXmlName == null) {
@@ -780,7 +780,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Файл: $importXmlName", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text("Файл: $importXmlName", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                         TextButton(onClick = onClearXml) {
                             Text("Убрать", color = MaterialTheme.colorScheme.error)
                         }
@@ -788,14 +788,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
                     if (importedPreviews.isEmpty()) {
                         Text(
                             "В файле не найдено ни одной дистанции (Course).",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                         )
                     } else {
                         importedPreviews.forEach { p ->
                             Text(
                                 "${p.name} — ${p.lengthMeters} м, КП: ${p.controlsCount}",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                     }
@@ -818,7 +818,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.distancesStep(
                             Text(d.name ?: "Без названия", fontWeight = FontWeight.Bold)
                             Text(
                                 "Длина: ${d.lengthMeters} м  •  Набор: ${d.climbMeters} м  •  КП: ${d.controlPoints.size}",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                         TextButton(onClick = { onRemove(index) }) {
@@ -849,7 +849,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.groupsStep(
             Text(
                 "Можно пропустить — группы, участники и результаты можно будет создать одним " +
                     "действием при импорте результатов из Excel на вкладке «Результаты».",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -869,7 +869,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.groupsStep(
                             Text(g.title, fontWeight = FontWeight.Bold)
                             val distName = distanceOptions.firstOrNull { it.first == g.distanceIndex }?.second ?: "—"
                             val ageStr = if (g.minAge != null || g.maxAge != null) "${g.minAge ?: ""}–${g.maxAge ?: ""} лет  •  " else ""
-                            Text("${ageStr}Дистанция: $distName", style = MaterialTheme.typography.bodySmall)
+                            Text("${ageStr}Дистанция: $distName", style = MaterialTheme.typography.bodyMedium)
                         }
                         TextButton(onClick = { onRemove(index) }) {
                             Text("Удалить", color = MaterialTheme.colorScheme.error)
@@ -928,7 +928,7 @@ private fun DistanceDialog(
                 if (isByChoice) {
                     Text(
                         "Формат «по выбору»: номер:баллы (например 32:5). Без баллов — по умолчанию 2.",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -1021,7 +1021,7 @@ private fun GroupDialog(
                     )
                 }
                 if (distanceOptions.isEmpty()) {
-                    Text("Сначала добавьте дистанцию", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Text("Сначала добавьте дистанцию", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     LabeledDropdown(
                         "Дистанция *", distanceIndex,
@@ -1029,7 +1029,7 @@ private fun GroupDialog(
                         Modifier.fillMaxWidth(),
                     ) { distanceIndex = it }
                 }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
             }
         },
         confirmButton = {

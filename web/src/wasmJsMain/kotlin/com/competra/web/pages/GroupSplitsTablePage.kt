@@ -151,7 +151,7 @@ fun GroupSplitsTablePage(
                         Column(modifier = Modifier.width(NAME_COLUMN_WIDTH).padding(horizontal = 4.dp)) {
                             Text(
                                 "${row.participant.lastName} ${row.participant.firstName}".trim(),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 2,
                             )
                             if (isByChoice) {
@@ -187,7 +187,7 @@ fun GroupSplitsTablePage(
                                     )
                                     Text(
                                         cell.deltaSeconds?.let { formatTime(it) } ?: "—",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = if (cell.isBestLeg) FontWeight.Bold else FontWeight.Normal,
                                         color = if (cell.isBestLeg) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                     )
@@ -206,7 +206,7 @@ fun GroupSplitsTablePage(
                                 Box(modifier = Modifier.width(SPLIT_COLUMN_WIDTH).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
                                     Text(
                                         row.totalDistanceMeters?.let { formatKm(it) } ?: "—",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodyLarge,
                                     )
                                 }
                             }

@@ -189,12 +189,12 @@ fun ImportPastResultsReviewPage(
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
                     "Новых групп: ${plan.groupsToCreate.size} • Новых участников: $newParticipantsCount • Обновится: $updatedCount",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
                 if (plan.skippedRows > 0) {
                     Text(
                         "Не распознано и пропущено строк: ${plan.skippedRows}",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -206,7 +206,7 @@ fun ImportPastResultsReviewPage(
                     item {
                         Text(
                             "Нет данных для импорта",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 16.dp),
                         )
@@ -271,16 +271,16 @@ private fun PastResultRow(rowPlan: PastResultsRowPlan) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(row.rank?.toString() ?: "—", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(0.4f))
+        Text(row.rank?.toString() ?: "—", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.4f))
         Column(modifier = Modifier.weight(2f)) {
-            Text("${row.lastName} ${row.firstName}", style = MaterialTheme.typography.bodyMedium)
+            Text("${row.lastName} ${row.firstName}", style = MaterialTheme.typography.bodyLarge)
             if (isNew) {
                 Text("новый участник", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Text(
             row.totalTimeSeconds?.let { formatTime(it) } ?: "—",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f),
         )
         Text(

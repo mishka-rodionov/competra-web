@@ -122,7 +122,7 @@ fun GroupMappingPage(
                 items(items, key = { it.participantGroupId }) { suggestion ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(suggestion.participantGroupTitle, style = MaterialTheme.typography.bodyMedium)
+                            Text(suggestion.participantGroupTitle, style = MaterialTheme.typography.bodyLarge)
                             LabeledDropdown(
                                 label = "Группа рейтинга",
                                 selectedKey = mapping[suggestion.participantGroupId],

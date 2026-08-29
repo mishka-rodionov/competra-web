@@ -160,7 +160,7 @@ fun RaceGraphPage(
                     Text(
                         "${series.participant.lastName} ${series.participant.firstName}".trim() +
                             (series.result?.rank?.let { " · Место $it" } ?: ""),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (isHighlighted) FontWeight.Bold else FontWeight.Normal,
                     )
                 }

@@ -133,7 +133,7 @@ fun WorkoutDetailPage(
 
             w.notes?.takeIf { it.isNotBlank() }?.let {
                 Text("Заметка", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(it, style = MaterialTheme.typography.bodyMedium)
+                Text(it, style = MaterialTheme.typography.bodyLarge)
             }
 
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -154,7 +154,7 @@ fun WorkoutDetailPage(
 @Composable
 private fun DetailRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }

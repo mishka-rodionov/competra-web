@@ -275,7 +275,7 @@ fun WorkoutEditorPage(
                     if (encoded != null) {
                         Text(
                             "Трек загружен: ${encoded.count { it == ';' } + 1} точек",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }

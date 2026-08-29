@@ -170,7 +170,7 @@ private fun RatingCard(rating: RatingSummary, onClick: () -> Unit) {
             Text(rating.name, style = MaterialTheme.typography.titleSmall)
             Text(
                 rating.ownerClubName,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
