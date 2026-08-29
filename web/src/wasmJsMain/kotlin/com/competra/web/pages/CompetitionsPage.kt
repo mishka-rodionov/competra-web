@@ -45,6 +45,7 @@ import com.competra.data.auth.TokenStorage
 import com.competra.data.repository.CompetitionRepository
 import com.competra.domain.models.Competition
 import com.competra.domain.models.OrienteeringCompetition
+import com.competra.web.utils.isDebugEnvironment
 import com.competra.web.utils.toLocaleDateString
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -280,16 +281,18 @@ fun CompetitionsPage(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Публичные") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Мои") })
+            if (isDebugEnvironment()) {
+                TabRow(selectedTabIndex = selectedTab) {
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Публичные") })
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Мои") })
+                }
             }
             error?.let {
                 Text(
                     it,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
             if (loading && selectedTab == 0) {
@@ -301,7 +304,7 @@ fun CompetitionsPage(
                 ) {
                     Text(
                         "Войдите в аккаунт, чтобы увидеть свои соревнования",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -310,7 +313,7 @@ fun CompetitionsPage(
                     Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Text(
                             "Нет соревнований",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -341,7 +344,7 @@ fun CompetitionsPage(
                                 ) {
                                     Text(
                                         appendError ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.error,
                                     )
                                     Spacer(Modifier.width(8.dp))
@@ -358,7 +361,7 @@ fun CompetitionsPage(
                     Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Text(
                             "Нет соревнований",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -403,12 +406,12 @@ internal fun PublicCompetitionCard(competition: Competition, onClick: () -> Unit
             }
             Text(
                 competition.startDate.toLocaleDateString(),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
             competition.address?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -437,12 +440,12 @@ private fun MyCompetitionCard(competition: OrienteeringCompetition, onClick: () 
             }
             Text(
                 competition.competition.startDate.toLocaleDateString(),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
             competition.competition.address?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
