@@ -36,6 +36,9 @@ jobs:
       - name: Build
         run: ./gradlew :web:wasmJsBrowserDistribution --no-daemon
 
+      - name: Add CNAME
+        run: echo "start.competra.ru" > web/build/dist/wasmJs/productionExecutable/CNAME
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
