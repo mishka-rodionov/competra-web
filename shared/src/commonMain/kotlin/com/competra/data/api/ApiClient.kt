@@ -22,7 +22,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-const val BASE_URL = "https://competra.ru/api"
+const val BASE_URL = "https://api.competra.ru/api"
 
 /** Бросается, когда сервер вернул 401 и обновить токен не удалось. */
 class UnauthorizedException : Exception("Сессия истекла, войдите снова")
