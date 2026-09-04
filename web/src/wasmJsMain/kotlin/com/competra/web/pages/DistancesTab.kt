@@ -324,8 +324,8 @@ internal fun DistanceCard(
                 Text(distance.name ?: "Без названия", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                DistanceStat("Длина", "${distance.lengthMeters} м")
-                DistanceStat("Набор", "${distance.climbMeters} м")
+                if (distance.lengthMeters > 0) DistanceStat("Длина", "${distance.lengthMeters} м")
+                if (distance.climbMeters > 0) DistanceStat("Набор", "${distance.climbMeters} м")
                 DistanceStat("КП", "${distance.controlsCount}")
             }
 

@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -41,6 +44,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
 import com.competra.data.repository.ClubRepository
@@ -199,128 +205,272 @@ fun RatingDetailPage(
             return@Scaffold
         }
 
-        // Единый скроллящийся список: иначе при длинной таблице результатов раздел
-        // "Соревнования рейтинга" уходит за пределы экрана и становится недостижим
-        // (см. тот же приём в competra-android RatingDetailScreen).
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-            actionError?.let { message ->
-                item {
-                    Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+        val standingsLoadingNow = standingsLoading && standingsByGroup[selectedGroupId] == null
+        val standings = selectedGroupId?.let { standingsByGroup[it] } ?: emptyList()
+        val onRemoveCompetition: (String) -> Unit = { competitionId ->
+            scope.launch {
+                when (ratingRepo.removeCompetition(ratingId, competitionId)) {
+                    is ApiResult.Success -> reloadKey++
+                    is ApiResult.Error -> actionError = "Не удалось удалить соревнование"
                 }
             }
+        }
+        val onMapCompetition: (String) -> Unit = { competitionId -> onMappingClick(ratingId, competitionId, r.groups) }
 
-            if (r.groups.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("В рейтинге нет групп зачёта", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // На широких экранах рейтинг и список стартов, которые в него входят, показываются
+        // рядом двумя колонками — при длинной таблице результатов не нужно скроллить вниз,
+        // чтобы увидеть старты. На узких — как раньше, единый скроллящийся список (см. тот
+        // же приём в competra-android RatingDetailScreen): иначе раздел "Соревнования
+        // рейтинга" уходит за пределы экрана и становится недостижим.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (maxWidth >= 900.dp) {
+                // Высота заголовка левой колонки (вкладки групп + строка "Как начисляются очки")
+                // измеряется фактически и переносится на заголовок правой колонки — так списки
+                // участников и стартов гарантированно начинаются на одном уровне независимо от
+                // шрифтов/масштаба, без подбора констант "на глаз".
+                val density = LocalDensity.current
+                var headerHeightPx by remember { mutableStateOf(0) }
+                val headerHeight = with(density) { headerHeightPx.toDp() }
+
+                Column(modifier = Modifier.fillMaxSize()) {
+                    actionError?.let { message ->
+                        Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
                     }
-                }
-            } else {
-                item {
-                    ScrollableTabRow(selectedTabIndex = r.groups.indexOfFirst { it.id == selectedGroupId }.coerceAtLeast(0)) {
-                        r.groups.forEach { group ->
-                            Tab(
-                                selected = group.id == selectedGroupId,
-                                onClick = { selectedGroupId = group.id },
-                                text = { Text(group.title) },
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier.weight(1f).onGloballyPositioned { headerHeightPx = it.size.height },
+                        ) {
+                            if (r.groups.isNotEmpty()) {
+                                GroupTabsAndPointsInfo(
+                                    groups = r.groups,
+                                    selectedGroupId = selectedGroupId,
+                                    onSelectGroup = { selectedGroupId = it },
+                                    onShowPointsInfo = { showPointsInfo = true },
+                                )
+                            } else {
+                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        "В рейтинге нет групп зачёта",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                        Box(
+                            modifier = Modifier.weight(1f).height(headerHeight),
+                            contentAlignment = Alignment.BottomStart,
+                        ) {
+                            Text(
+                                "Соревнования рейтинга",
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            if (r.groups.isNotEmpty()) {
+                                standingsListItems(standingsLoadingNow, standings)
+                            }
+                        }
+                        VerticalDivider(modifier = Modifier.fillMaxHeight())
+                        LazyColumn(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            competitionsListItems(
+                                competitions = competitions,
+                                isAdmin = isAdmin,
+                                onMappingClick = onMapCompetition,
+                                onRemove = onRemoveCompetition,
                             )
                         }
                     }
                 }
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showPointsInfo = true }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            "Как начисляются очки",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-
-                if (standingsLoading && standingsByGroup[selectedGroupId] == null) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                } else {
-                    val standings = selectedGroupId?.let { standingsByGroup[it] } ?: emptyList()
-                    if (standings.isEmpty()) {
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    actionError?.let { message ->
                         item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                                Text("Пока нет данных", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    } else {
-                        items(standings, key = { "standing_${it.participantKey}" }) { standing ->
-                            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                                RatingStandingRow(standing)
-                            }
+                            Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
                         }
                     }
+                    standingsSection(
+                        groups = r.groups,
+                        selectedGroupId = selectedGroupId,
+                        onSelectGroup = { selectedGroupId = it },
+                        onShowPointsInfo = { showPointsInfo = true },
+                        standingsLoading = standingsLoadingNow,
+                        standings = standings,
+                    )
+                    competitionsSection(
+                        competitions = competitions,
+                        isAdmin = isAdmin,
+                        onMappingClick = onMapCompetition,
+                        onRemove = onRemoveCompetition,
+                    )
                 }
             }
+        }
+    }
+}
 
-            item {
-                Text(
-                    "Соревнования рейтинга",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+@Composable
+private fun GroupTabsAndPointsInfo(
+    groups: List<RatingGroup>,
+    selectedGroupId: Long?,
+    onSelectGroup: (Long) -> Unit,
+    onShowPointsInfo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        ScrollableTabRow(selectedTabIndex = groups.indexOfFirst { it.id == selectedGroupId }.coerceAtLeast(0)) {
+            groups.forEach { group ->
+                Tab(
+                    selected = group.id == selectedGroupId,
+                    onClick = { onSelectGroup(group.id) },
+                    text = { Text(group.title) },
                 )
             }
-            if (competitions.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("Соревнований пока нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onShowPointsInfo() }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                Icons.Filled.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                "Как начисляются очки",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+private fun LazyListScope.standingsSection(
+    groups: List<RatingGroup>,
+    selectedGroupId: Long?,
+    onSelectGroup: (Long) -> Unit,
+    onShowPointsInfo: () -> Unit,
+    standingsLoading: Boolean,
+    standings: List<RatingStanding>,
+) {
+    if (groups.isEmpty()) {
+        item {
+            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("В рейтинге нет групп зачёта", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        return
+    }
+
+    item {
+        GroupTabsAndPointsInfo(
+            groups = groups,
+            selectedGroupId = selectedGroupId,
+            onSelectGroup = onSelectGroup,
+            onShowPointsInfo = onShowPointsInfo,
+        )
+    }
+    standingsListItems(standingsLoading, standings)
+}
+
+private fun LazyListScope.standingsListItems(standingsLoading: Boolean, standings: List<RatingStanding>) {
+    if (standingsLoading) {
+        item {
+            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+    } else if (standings.isEmpty()) {
+        item {
+            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text("Пока нет данных", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    } else {
+        items(standings, key = { "standing_${it.participantKey}" }) { standing ->
+            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                RatingStandingRow(standing)
+            }
+        }
+    }
+}
+
+private fun LazyListScope.competitionsSection(
+    competitions: List<RatingCompetition>,
+    isAdmin: Boolean,
+    onMappingClick: (String) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    item {
+        Text(
+            "Соревнования рейтинга",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
+    competitionsListItems(competitions, isAdmin, onMappingClick, onRemove)
+}
+
+private fun LazyListScope.competitionsListItems(
+    competitions: List<RatingCompetition>,
+    isAdmin: Boolean,
+    onMappingClick: (String) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    if (competitions.isEmpty()) {
+        item {
+            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("Соревнований пока нет", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    } else {
+        items(competitions, key = { "competition_${it.id}" }) { rc ->
+            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                CompetitionRatingCard(
+                    competition = rc,
+                    isAdmin = isAdmin,
+                    onMappingClick = { onMappingClick(rc.competitionId) },
+                    onRemove = { onRemove(rc.competitionId) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompetitionRatingCard(
+    competition: RatingCompetition,
+    isAdmin: Boolean,
+    onMappingClick: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(competition.competitionTitle, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    competition.competitionStartDate.toLocaleDateString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (isAdmin) {
+                IconButton(onClick = onMappingClick) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Маппинг групп")
                 }
-            } else {
-                items(competitions, key = { "competition_${it.id}" }) { rc ->
-                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(rc.competitionTitle, style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        rc.competitionStartDate.toLocaleDateString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                if (isAdmin) {
-                                    IconButton(onClick = { onMappingClick(ratingId, rc.competitionId, r.groups) }) {
-                                        Icon(Icons.Filled.Edit, contentDescription = "Маппинг групп")
-                                    }
-                                    IconButton(onClick = {
-                                        scope.launch {
-                                            when (ratingRepo.removeCompetition(ratingId, rc.competitionId)) {
-                                                is ApiResult.Success -> reloadKey++
-                                                is ApiResult.Error -> actionError = "Не удалось удалить соревнование"
-                                            }
-                                        }
-                                    }) {
-                                        Icon(Icons.Filled.Delete, contentDescription = "Удалить")
-                                    }
-                                }
-                            }
-                        }
-                    }
+                IconButton(onClick = onRemove) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Удалить")
                 }
             }
         }

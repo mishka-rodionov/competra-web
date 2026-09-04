@@ -41,6 +41,7 @@ import com.competra.data.repository.ResultRepository
 import com.competra.domain.models.ScoreGraphData
 import com.competra.domain.models.buildScoreGraphData
 import com.competra.domain.models.sortedForResults
+import com.competra.web.components.DebugErrorBanner
 import com.competra.web.components.ScoreGraphChart
 import com.competra.web.components.raceGraphColor
 import org.koin.compose.koinInject
@@ -98,7 +99,8 @@ fun ScoreGraphPage(
                     }
                 },
             )
-        }
+        },
+        bottomBar = { DebugErrorBanner() },
     ) { padding ->
         if (loading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

@@ -41,6 +41,7 @@ import com.competra.domain.models.RaceGraphData
 import com.competra.domain.models.buildRaceGraphData
 import com.competra.domain.models.buildSplitsTable
 import com.competra.domain.models.sortedForResults
+import com.competra.web.components.DebugErrorBanner
 import com.competra.web.components.RaceGraphChart
 import com.competra.web.components.raceGraphColor
 import org.koin.compose.koinInject
@@ -95,7 +96,8 @@ fun RaceGraphPage(
                     }
                 },
             )
-        }
+        },
+        bottomBar = { DebugErrorBanner() },
     ) { padding ->
         if (loading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

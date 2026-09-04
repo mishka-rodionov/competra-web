@@ -545,7 +545,7 @@ private fun GroupCard(
             group.distanceName?.let {
                 val distInfo = buildString {
                     append(it)
-                    group.distanceLengthMeters?.let { l -> append(" · $l м") }
+                    group.distanceLengthMeters?.let { l -> if (l > 0) append(" · $l м") }
                     group.distanceClimbMeters?.let { c -> if (c > 0) append(" · набор $c м") }
                     group.distanceControlsCount?.let { n -> append(" · $n КП") }
                 }

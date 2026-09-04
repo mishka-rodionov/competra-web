@@ -1,5 +1,6 @@
 package com.competra.web.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
@@ -147,7 +149,7 @@ private fun StartProtocolGroupCard(
             Text(groupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("№", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(0.5f))
@@ -156,11 +158,14 @@ private fun StartProtocolGroupCard(
                 Text("Стартовый интервал", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            participants.forEach { participant ->
+            participants.forEachIndexed { index, participant ->
+                val rowBackground = if (index % 2 == 0) MaterialTheme.colorScheme.surface
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 StartProtocolRow(
                     participant = participant,
                     minuteByStartTime = minuteByStartTime,
                     zone = zone,
+                    rowBackground = rowBackground,
                     onClick = { onParticipantClick(participant.id) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -174,6 +179,7 @@ private fun StartProtocolRow(
     participant: OrienteeringParticipant,
     minuteByStartTime: Map<Long, Int>,
     zone: String,
+    rowBackground: Color,
     onClick: () -> Unit,
 ) {
     val name = "${participant.lastName} ${participant.firstName}"
@@ -181,7 +187,8 @@ private fun StartProtocolRow(
     val minuteStr = participant.startTime?.let { minuteByStartTime[it] }?.let { formatStartInterval(it) } ?: "—"
 
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().background(rowBackground).clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

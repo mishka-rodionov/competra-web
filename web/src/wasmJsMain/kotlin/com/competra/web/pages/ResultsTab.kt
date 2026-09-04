@@ -14,14 +14,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.competra.data.api.ApiResult
@@ -176,21 +182,37 @@ private fun GroupResultsCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(groupTitle, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Row {
-                    TextButton(onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) }) { Text("Сплиты") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(
+                        onClick = { onGroupSplitsClick(groupId, groupTitle, distanceId) },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    ) {
+                        Icon(Icons.Filled.TableChart, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("Сплиты", modifier = Modifier.padding(start = 6.dp))
+                    }
                     // Для BY_CHOICE «График» — это график набора очков во времени (нет общего
                     // порядка КП, поэтому график отставания от лидера по позиции не применим).
-                    TextButton(
+                    FilledTonalButton(
                         onClick = {
                             if (isByChoice) onScoreGraphClick(groupId, groupTitle, distanceId)
                             else onRaceGraphClick(groupId, groupTitle, distanceId)
-                        }
-                    ) { Text("График") }
+                        },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ShowChart, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("График", modifier = Modifier.padding(start = 6.dp))
+                    }
                 }
             }
             HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("#", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(0.4f))
@@ -207,12 +229,15 @@ private fun GroupResultsCard(
                 Text("Статус", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            groupResults.forEach { result ->
+            groupResults.forEachIndexed { index, result ->
                 val participant = participantsById[result.participantId]
+                val rowBackground = if (index % 2 == 0) MaterialTheme.colorScheme.surface
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ResultRow(
                     result = result,
                     participant = participant,
                     isByChoice = isByChoice,
+                    rowBackground = rowBackground,
                     onClick = { onParticipantClick(result.participantId) },
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -256,6 +281,7 @@ private fun ResultRow(
     result: OrienteeringResult,
     participant: OrienteeringParticipant?,
     isByChoice: Boolean,
+    rowBackground: Color,
     onClick: () -> Unit,
 ) {
     val name = if (participant != null) "${participant.lastName} ${participant.firstName}" else "Участник ${result.participantId}"
@@ -266,9 +292,9 @@ private fun ResultRow(
     // регламентирован) — строка результата не кликабельна. Групповая таблица сплитов
     // (кнопка «Сплиты» в GroupResultsCard) при этом доступна — там свой формат для BY_CHOICE.
     val rowModifier = if (isByChoice) {
-        Modifier.fillMaxWidth().padding(vertical = 6.dp)
+        Modifier.fillMaxWidth().background(rowBackground).padding(horizontal = 8.dp, vertical = 8.dp)
     } else {
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp)
+        Modifier.fillMaxWidth().background(rowBackground).clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 8.dp)
     }
 
     Row(

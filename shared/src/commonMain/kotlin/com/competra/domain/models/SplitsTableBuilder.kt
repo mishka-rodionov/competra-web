@@ -326,6 +326,12 @@ fun buildSplitsTable(
  * Строит данные графика гонки (отставание от "виртуального" лидера — минимальное кумулятивное
  * время на каждом КП среди финишировавших) из уже построенной таблицы сплитов.
  * Участники не в статусе FINISHED полностью исключаются: их кривая отставания не имеет смысла.
+ *
+ * Каждая кривая начинается с синтетической точки старта (positionIndex=0, deltaSeconds=0) — все
+ * участники стартуют вместе, поэтому в этой точке отставания ещё нет ни у кого. Без неё кривые
+ * расходились бы уже с первого КП (там "лидер" — не обязательно тот же участник на всех КП, а
+ * минимальное время до конкретного КП), что выглядит как будто график начинается "не с начала".
+ * Тот же приём уже используется в [buildScoreGraphData] (там точка (0, 0)).
  */
 fun buildRaceGraphData(table: SplitsTable): RaceGraphData {
     val finishedRows = table.rows.filter { it.result?.status == "FINISHED" }
@@ -335,10 +341,11 @@ fun buildRaceGraphData(table: SplitsTable): RaceGraphData {
     }
 
     val series = finishedRows.map { row ->
-        val points = table.columns.mapIndexed { i, column ->
+        val points = mutableListOf(RaceGraphPoint(positionIndex = 0, controlPoint = 0, deltaSeconds = 0L))
+        table.columns.forEachIndexed { i, column ->
             val cumulative = row.cells.getOrNull(i)?.cumulativeSeconds
             val leader = leaderCumulativeByColumn[i]
-            RaceGraphPoint(
+            points += RaceGraphPoint(
                 positionIndex = column.positionIndex,
                 controlPoint = column.controlPoint,
                 deltaSeconds = if (cumulative != null && leader != null) cumulative - leader else null,
