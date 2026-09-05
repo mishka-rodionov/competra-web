@@ -907,13 +907,14 @@ private fun ResultsManageTab(
                     onClick = {
                         pickExcelFile { _, base64 ->
                             error = null
-                            val parsedFile = runCatching { parseResultsExcel(base64) }.getOrNull()
-                            if (parsedFile == null || parsedFile.rows.isEmpty()) {
-                                error = "Не удалось распознать файл — проверьте формат столбцов Excel."
-                                return@pickExcelFile
+                            parseResultsExcel(base64) { parsedFile ->
+                                if (parsedFile == null || parsedFile.rows.isEmpty()) {
+                                    error = "Не удалось распознать файл — проверьте формат столбцов Excel."
+                                    return@parseResultsExcel
+                                }
+                                val plan = buildPastResultsPlan(parsedFile, groups, participants)
+                                onImportPastResultsReview(plan, results)
                             }
-                            val plan = buildPastResultsPlan(parsedFile, groups, participants)
-                            onImportPastResultsReview(plan, results)
                         }
                     },
                 ) {

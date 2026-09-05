@@ -9,23 +9,32 @@ import kotlinx.serialization.json.Json
  * оцифровки бумажных протоколов (см. обсуждение фичи), не привязан к какому-то внешнему стандарту.
  *
  * .xlsx — бинарный ZIP+XML, браузерный DOMParser (как для HTML-протокола, [parseResultsHtml])
- * не подходит — используем SheetJS (npm-пакет "xlsx", см. web/build.gradle.kts). Модуль
- * подключается через @JsModule и один раз "прибивается" к globalThis, дальше вся работа с ним —
- * в обычном @JsFun-глее, как и остальной JS-интероп в этом проекте.
+ * не подходит — используем SheetJS (npm-пакет "xlsx", см. web/build.gradle.kts). Библиотека весит
+ * ~400 КБ несжатого JS и нужна только на этом экране (импорт прошедших результатов), поэтому
+ * грузится лениво через dynamic import() при первом вызове [parseResultsExcel] — раньше она через
+ * @JsModule статически зашивалась в основной бандл competra.js и грузилась на каждой странице.
  */
-@JsModule("xlsx")
-private external object XlsxModule : JsAny
-
-@JsFun("(lib) => { if (!globalThis.__competraXLSX) globalThis.__competraXLSX = lib; }")
-private external fun jsAttachXlsxLib(lib: JsAny)
+@JsFun(
+    "(onReady, onError) => { " +
+        "import('xlsx').then((lib) => { globalThis.__competraXLSX = lib; onReady(); }) " +
+        ".catch((e) => onError(String((e && e.message) || e))); }"
+)
+private external fun jsLoadXlsxModule(onReady: () -> Unit, onError: (String) -> Unit)
 
 private var xlsxAttached = false
 
-private fun ensureXlsxAttached() {
-    if (!xlsxAttached) {
-        jsAttachXlsxLib(XlsxModule)
-        xlsxAttached = true
+private fun ensureXlsxAttached(onReady: () -> Unit, onError: (String) -> Unit) {
+    if (xlsxAttached) {
+        onReady()
+        return
     }
+    jsLoadXlsxModule(
+        onReady = {
+            xlsxAttached = true
+            onReady()
+        },
+        onError = onError,
+    )
 }
 
 @JsFun(
@@ -125,9 +134,22 @@ private val parserJson = Json { ignoreUnknownKeys = true }
  * повторяющиеся кавычки в бумажном протоколе). «Результат» обязателен, если не заполнена пара
  * «Время старта»+«Время финиша» — тогда чистое время считается как разница отсечек.
  * Строки, из которых не удалось получить ни статус, ни время, — пропускаются.
+ *
+ * Асинхронно: первый вызов на странице подгружает SheetJS (см. [ensureXlsxAttached]), поэтому
+ * результат приходит через [onResult], а не как возврат функции. `null` — если библиотеку не
+ * удалось загрузить (нет сети) или файл не распознан как валидный .xlsx.
  */
-fun parseResultsExcel(base64: String): ParsedPastResultsFile {
-    ensureXlsxAttached()
+fun parseResultsExcel(base64: String, onResult: (ParsedPastResultsFile?) -> Unit) {
+    ensureXlsxAttached(
+        onReady = { onResult(runCatching { parseResultsExcelSync(base64) }.getOrNull()) },
+        onError = { message ->
+            DebugErrorReporter.report("Загрузка библиотеки xlsx: $message")
+            onResult(null)
+        },
+    )
+}
+
+private fun parseResultsExcelSync(base64: String): ParsedPastResultsFile {
     val raw = jsParseResultsExcel(base64)
     val doc = parserJson.decodeFromString<RawExcelDoc>(raw)
 
