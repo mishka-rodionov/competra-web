@@ -38,6 +38,7 @@ import com.competra.data.repository.CompetitionRepository
 import com.competra.data.repository.UserRepository
 import com.competra.domain.models.OrienteeringCompetition
 import com.competra.domain.models.UserProfile
+import com.competra.web.utils.openExternalLink
 import com.competra.web.utils.toLocaleDateString
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -225,8 +226,14 @@ fun ProfilePage(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 OutlinedButton(
-                    onClick = onAboutClick,
+                    onClick = { openExternalLink("/guides/first-competition-guide.html") },
                     modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Инструкция для организатора")
+                }
+                OutlinedButton(
+                    onClick = onAboutClick,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     Text("О приложении")
                 }
@@ -305,6 +312,12 @@ private fun UnauthenticatedProfile(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Войти / Зарегистрироваться")
+                }
+                OutlinedButton(
+                    onClick = { openExternalLink("/guides/first-competition-guide.html") },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Инструкция для организатора")
                 }
                 OutlinedButton(
                     onClick = onAboutClick,

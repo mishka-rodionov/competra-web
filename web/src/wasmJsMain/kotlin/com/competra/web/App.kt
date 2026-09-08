@@ -322,14 +322,12 @@ private fun MainScaffold(currentPage: Page, onNavigate: (Page) -> Unit) {
                             label = { Text("Дневник") },
                         )
                     }
-                    if (isDebugEnvironment()) {
-                        NavigationBarItem(
-                            selected = currentPage is Page.Profile,
-                            onClick = { onNavigate(Page.Profile) },
-                            icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
-                            label = { Text("Профиль") },
-                        )
-                    }
+                    NavigationBarItem(
+                        selected = currentPage is Page.Profile,
+                        onClick = { onNavigate(Page.Profile) },
+                        icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
+                        label = { Text("Профиль") },
+                    )
                 }
             }
         }
