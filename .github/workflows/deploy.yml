@@ -36,9 +36,9 @@ jobs:
       - name: Build
         run: ./gradlew :web:wasmJsBrowserDistribution --no-daemon
 
-      - name: Add CNAME
-        run: echo "competra.ru" > web/build/dist/wasmJs/productionExecutable/CNAME
-
+      # competra.ru перешёл на новый репозиторий (competra-web-ts) — не пишем сюда CNAME,
+      # иначе следующий деплой отсюда перехватит домен обратно (GitHub Pages разрешает
+      # custom domain только одному репозиторию за раз).
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
