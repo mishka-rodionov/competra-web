@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Архивный проект.** Веб-клиент экосистемы переехал на `competra-web-ts`
+> (`/Users/rodionov/web_projects/competra-web-ts`, React + TypeScript + Vite) — там же теперь
+> и `CLAUDE.md`, и деплой на `competra.ru`. Этот репозиторий больше не деплоится (см.
+> `.github/workflows/deploy.yml` — шаг записи CNAME убран, чтобы случайный пуш сюда не перехватил
+> домен обратно). Остальные проекты экосистемы (`eSport`, `competra-android`, `mapper`) в своих
+> `CLAUDE.md` теперь ссылаются на `competra-web-ts`, а не сюда.
+
 ## Project Overview
 
 **competra-web** — веб-приложение для управления соревнованиями по ориентированию. Kotlin Multiplatform + Compose Multiplatform, скомпилированный в WebAssembly (wasmJs). Деплоится на GitHub Pages.
